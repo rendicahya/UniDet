@@ -7,10 +7,12 @@ import time
 import cv2
 import sys
 import tqdm
+import pathlib
 
 from detectron2.config import get_cfg
 from detectron2.data.detection_utils import read_image
 from detectron2.utils.logger import setup_logger
+from moviepy.editor import ImageSequenceClip
 
 from unidet.predictor import UnifiedVisualizationDemo
 from unidet.config import add_unidet_config
@@ -43,6 +45,10 @@ def get_parser():
     )
     parser.add_argument("--webcam", action="store_true", help="Take inputs from webcam.")
     parser.add_argument("--video-input", help="Path to video file.")
+    parser.add_argument(
+        "--batch-video-input",
+        help="A directory containing the input videos.",
+    )
     parser.add_argument(
         "--input",
         nargs="+",
@@ -162,3 +168,21 @@ if __name__ == "__main__":
             output_file.release()
         else:
             cv2.destroyAllWindows()
+    elif args.batch_video_input:
+        input_path = pathlib.Path(args.batch_video_input)
+        assert input_path.exists(), "Video input path not exist"
+        assert os.path.isdir(args.output), "Output path must be a directory"
+        num_video = sum(1 for f in input_path.glob("**/*") if f.is_file())
+        with tqdm.tqdm(total=num_video) as bar:
+            for action in input_path.iterdir():
+                for file in action.iterdir():
+                    bar.set_description(file.name)
+                    video = cv2.VideoCapture(str(file))
+                    width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
+                    height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                    fps = video.get(cv2.CAP_PROP_FPS)
+                    output_fname = os.path.join(args.output, file.name)
+                    output_fname = os.path.splitext(output_fname)[0] + ".mp4"
+                    output_frames = [vis_frame for vis_frame in demo.run_on_video(video)]
+                    video.release()
+                    ImageSequenceClip(output_frames, fps=fps).write_videofile(output_fname, audio=False)
