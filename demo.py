@@ -185,4 +185,4 @@ if __name__ == "__main__":
                     output_fname = os.path.splitext(output_fname)[0] + ".mp4"
                     output_frames = [vis_frame for vis_frame in demo.run_on_video(video)]
                     video.release()
-                    ImageSequenceClip(output_frames, fps=fps).write_videofile(output_fname, audio=False)
+                    ImageSequenceClip(output_frames, fps=fps).write_videofile(output_fname, audio=False, logger=None)
