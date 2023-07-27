@@ -181,7 +181,7 @@ if __name__ == "__main__":
                     width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
                     height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
                     fps = video.get(cv2.CAP_PROP_FPS)
-                    output_frames = [vis_frame for vis_frame in demo.run_on_video(video)]
+                    output_frames = [cv2.cvtColor(vis_frame, cv2.COLOR_BGR2RGB) for vis_frame in demo.run_on_video(video)]
                     video.release()
                     output_fname = pathlib.Path(args.output) / action.name / file.with_suffix('.mp4').name
                     output_fname.parent.mkdir(parents=True, exist_ok=True)
