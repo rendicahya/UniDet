@@ -5,7 +5,7 @@ import multiprocessing as mp
 import os
 import time
 import cv2
-import sys
+import json
 import tqdm
 import pathlib
 
@@ -123,7 +123,7 @@ if __name__ == "__main__":
         assert args.input is None, "Cannot have both --input and --webcam!"
         assert args.output is None, "output not yet supported with --webcam!"
         cam = cv2.VideoCapture(0)
-        for vis in tqdm.tqdm(demo.run_on_video(cam)):
+        for vis, _ in tqdm.tqdm(demo.run_on_video(cam)):
             cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
             cv2.imshow(WINDOW_NAME, vis)
             if cv2.waitKey(1) == 27:
@@ -140,13 +140,13 @@ if __name__ == "__main__":
 
         if args.output:
             if os.path.isdir(args.output):
-                output_fname = os.path.join(args.output, basename)
-                output_fname = os.path.splitext(output_fname)[0] + ".mp4"
+                output_video_path = os.path.join(args.output, basename)
+                output_video_path = os.path.splitext(output_video_path)[0] + ".mp4"
             else:
-                output_fname = args.output
-            assert not os.path.isfile(output_fname), output_fname
+                output_video_path = args.output
+            assert not os.path.isfile(output_video_path), output_video_path
             output_file = cv2.VideoWriter(
-                filename=output_fname,
+                filename=output_video_path,
                 # some installation of opencv may not support x264 (due to its license),
                 # you can try other format (e.g. MPEG)
                 fourcc=cv2.VideoWriter_fourcc(*"mp4v"),
@@ -155,7 +155,7 @@ if __name__ == "__main__":
                 isColor=True,
             )
         assert os.path.isfile(args.video_input)
-        for vis_frame in tqdm.tqdm(demo.run_on_video(video), total=num_frames):
+        for vis_frame, _ in tqdm.tqdm(demo.run_on_video(video), total=num_frames):
             if args.output:
                 output_file.write(vis_frame)
             else:
@@ -173,17 +173,36 @@ if __name__ == "__main__":
         assert input_path.exists(), "Video input path not exist"
         assert os.path.isdir(args.output), "Output path must be a directory"
         num_video = sum(1 for f in input_path.glob("**/*") if f.is_file())
+        with open("classnames.json", 'r') as f:
+            classnames = json.load(f)
+        common_obj = 'Person', 'Man', 'Woman'
+        common_ids = [classnames.index(i) for i in classnames if i in common_obj]
+        with open("ucf101_relevant_ids.json", 'r') as f:
+            relevant_list = json.load(f)
         with tqdm.tqdm(total=num_video) as bar:
             for action in input_path.iterdir():
+                relevant = [*relevant_list[action.name], *common_ids]
                 for file in action.iterdir():
                     bar.set_description(file.name)
                     video = cv2.VideoCapture(str(file))
                     width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
                     height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
                     fps = video.get(cv2.CAP_PROP_FPS)
-                    output_frames = [cv2.cvtColor(vis_frame, cv2.COLOR_BGR2RGB) for vis_frame in demo.run_on_video(video)]
+                    output_frames = []
+                    det_data = {}
+                    gen = demo.run_on_video(video)
+                    for i, (f, pred) in enumerate(gen):
+                        viz = cv2.cvtColor(f, cv2.COLOR_BGR2RGB)
+                        output_frames.append(viz)
+                        det_data.update({
+                            i: [(pred_box.tolist(), score.tolist(), pred_class.tolist()) for pred_box, score, pred_class in zip(pred.pred_boxes.tensor, pred.scores, pred.pred_classes)]
+                        })
                     video.release()
-                    output_fname = pathlib.Path(args.output) / action.name / file.with_suffix('.mp4').name
-                    output_fname.parent.mkdir(parents=True, exist_ok=True)
-                    ImageSequenceClip(output_frames, fps=fps).write_videofile(str(output_fname), audio=False, logger=None)
+                    output_video_path = pathlib.Path(args.output) / action.name / file.with_suffix('.mp4').name
+                    output_video_path.parent.mkdir(parents=True, exist_ok=True)
+                    ImageSequenceClip(output_frames, fps=fps).write_videofile(str(output_video_path), audio=False, logger=None)
+                    output_json_path = pathlib.Path(args.output + '-json') / action.name / file.with_suffix('.json').name
+                    output_json_path.parent.mkdir(parents=True, exist_ok=True)
+                    with open(output_json_path, "w") as json_file:
+                        json.dump(det_data, json_file)
                     bar.update(1)
