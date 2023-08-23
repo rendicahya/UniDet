@@ -60,12 +60,15 @@ def get_parser():
         help="A file or directory to save output visualizations. "
         "If not given, will show output in an OpenCV window.",
     )
-
     parser.add_argument(
         "--confidence-threshold",
         type=float,
         default=0.5,
         help="Minimum score for instance predictions to be shown",
+    )
+    parser.add_argument('--parallel',
+        action='store_true',
+        help='Perform processing in parallel'
     )
     parser.add_argument(
         "--opts",
@@ -84,8 +87,7 @@ if __name__ == "__main__":
     logger.info("Arguments: " + str(args))
 
     cfg = setup_cfg(args)
-
-    demo = UnifiedVisualizationDemo(cfg)
+    demo = UnifiedVisualizationDemo(cfg, parallel=args.parallel)
 
     if args.input:
         if len(args.input) == 1:
@@ -140,13 +142,13 @@ if __name__ == "__main__":
 
         if args.output:
             if os.path.isdir(args.output):
-                output_video_path = os.path.join(args.output, basename)
-                output_video_path = os.path.splitext(output_video_path)[0] + ".mp4"
+                output_fname = os.path.join(args.output, basename)
+                output_fname = os.path.splitext(output_fname)[0] + ".mp4"
             else:
-                output_video_path = args.output
-            assert not os.path.isfile(output_video_path), output_video_path
+                output_fname = args.output
+            assert not os.path.isfile(output_fname), output_fname
             output_file = cv2.VideoWriter(
-                filename=output_video_path,
+                filename=output_fname,
                 # some installation of opencv may not support x264 (due to its license),
                 # you can try other format (e.g. MPEG)
                 fourcc=cv2.VideoWriter_fourcc(*"mp4v"),
@@ -173,34 +175,29 @@ if __name__ == "__main__":
         assert input_path.exists(), "Video input path not exist"
         assert os.path.isdir(args.output), "Output path must be a directory"
         num_video = sum(1 for f in input_path.glob("**/*") if f.is_file())
-        with open("classnames.json", 'r') as f:
-            classnames = json.load(f)
-        common_obj = 'Person', 'Man', 'Woman'
-        common_ids = [classnames.index(i) for i in classnames if i in common_obj]
-        with open("ucf101_relevant_ids.json", 'r') as f:
-            relevant_list = json.load(f)
         with tqdm.tqdm(total=num_video) as bar:
             for action in input_path.iterdir():
-                relevant = [*relevant_list[action.name], *common_ids]
                 for file in action.iterdir():
                     bar.set_description(file.name)
                     video = cv2.VideoCapture(str(file))
                     width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
                     height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
                     fps = video.get(cv2.CAP_PROP_FPS)
+                    num_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
                     output_frames = []
                     det_data = {}
                     gen = demo.run_on_video(video)
                     for i, (f, pred) in enumerate(gen):
+                        bar.set_description(f'{file.name} ({i}/{num_frames})')
                         viz = cv2.cvtColor(f, cv2.COLOR_BGR2RGB)
                         output_frames.append(viz)
                         det_data.update({
                             i: [(pred_box.tolist(), score.tolist(), pred_class.tolist()) for pred_box, score, pred_class in zip(pred.pred_boxes.tensor, pred.scores, pred.pred_classes)]
                         })
                     video.release()
-                    output_video_path = pathlib.Path(args.output) / action.name / file.with_suffix('.mp4').name
-                    output_video_path.parent.mkdir(parents=True, exist_ok=True)
-                    ImageSequenceClip(output_frames, fps=fps).write_videofile(str(output_video_path), audio=False, logger=None)
+                    output_fname = pathlib.Path(args.output) / action.name / file.with_suffix('.mp4').name
+                    output_fname.parent.mkdir(parents=True, exist_ok=True)
+                    ImageSequenceClip(output_frames, fps=fps).write_videofile(str(output_fname), audio=False, logger=None)
                     output_json_path = pathlib.Path(args.output + '-json') / action.name / file.with_suffix('.json').name
                     output_json_path.parent.mkdir(parents=True, exist_ok=True)
                     with open(output_json_path, "w") as json_file:
