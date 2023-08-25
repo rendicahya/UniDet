@@ -22,7 +22,7 @@ from tqdm import tqdm
     ),
 )
 @click.argument(
-    "json-path",
+    "bbox-json-path",
     nargs=1,
     required=True,
     type=click.Path(
@@ -45,14 +45,26 @@ from tqdm import tqdm
         path_type=pathlib.Path,
     ),
 )
-@click.argument("threshold", nargs=1, required=False, type=float, default=0.2)
-def main(dataset_path, json_path, output_path, threshold):
+@click.argument(
+    "relevant-object-json",
+    nargs=1,
+    required=True,
+    type=click.Path(
+        file_okay=True,
+        dir_okay=False,
+        exists=True,
+        readable=True,
+        path_type=pathlib.Path,
+    ),
+)
+@click.option("--threshold", nargs=1, required=False, type=float, default=0.2)
+def main(dataset_path, bbox_json_path, output_path, relevant_object_json, threshold):
     n_files = sum(1 for f in dataset_path.glob("**/*") if f.is_file())
 
     with open("datasets/label_spaces/learned_mAP.json", "r") as f:
         unified_label_file = json.load(f)
 
-    with open("ucf101_relevant_ids.json", "r") as f:
+    with open(relevant_object_json, "r") as f:
         relevant_ids = json.load(f)
 
     thing_classes = [
@@ -82,7 +94,9 @@ def main(dataset_path, json_path, output_path, threshold):
                 )
 
                 output_video_path.parent.mkdir(parents=True, exist_ok=True)
-                json_file = json_path / action.name / file.with_suffix(".json").name
+                json_file = (
+                    bbox_json_path / action.name / file.with_suffix(".json").name
+                )
 
                 if not json_file.exists():
                     print("JSON file not found:", json_file.name)
