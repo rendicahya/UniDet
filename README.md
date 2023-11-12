@@ -55,6 +55,13 @@ More models can be found in our [MODEL ZOO](docs/REPRODUCE.md).
 
 Our project is developed on [detectron2](https://github.com/facebookresearch/detectron2). Please follow the official [detectron2 installation](https://github.com/facebookresearch/detectron2/blob/master/INSTALL.md).
 
+### Working Installs
+~~~
+pip install torch==1.10.0+cu111 torchvision==0.11.0+cu111 -f https://download.pytorch.org/whl/torch_stable.html
+pip install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cu111/torch1.10/index.html
+pip install opencv-python-headless tqdm pillow==9.5.0 numpy==1.23.5
+~~~
+
 ## Demo
 
 We use the same inference API as detectorn2. To run inference on an image folder using our pretrained model, run
