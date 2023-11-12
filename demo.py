@@ -12,7 +12,7 @@ import pathlib
 from detectron2.config import get_cfg
 from detectron2.data.detection_utils import read_image
 from detectron2.utils.logger import setup_logger
-from moviepy.editor import ImageSequenceClip
+# from moviepy.editor import ImageSequenceClip
 
 from unidet.predictor import UnifiedVisualizationDemo
 from unidet.config import add_unidet_config
@@ -197,7 +197,7 @@ if __name__ == "__main__":
                     video.release()
                     output_fname = pathlib.Path(args.output) / action.name / file.with_suffix('.mp4').name
                     output_fname.parent.mkdir(parents=True, exist_ok=True)
-                    ImageSequenceClip(output_frames, fps=fps).write_videofile(str(output_fname), audio=False, logger=None)
+                    # ImageSequenceClip(output_frames, fps=fps).write_videofile(str(output_fname), audio=False, logger=None)
                     output_json_path = pathlib.Path(args.output + '-json') / action.name / file.with_suffix('.json').name
                     output_json_path.parent.mkdir(parents=True, exist_ok=True)
                     with open(output_json_path, "w") as json_file:
