@@ -1,7 +1,7 @@
-'''
+"""
 This script detects objects in videos and
 generates videos as well as JSON files.
-'''
+"""
 
 import argparse
 import json
@@ -10,12 +10,12 @@ from pathlib import Path
 
 import cv2
 import tqdm
-from utils.config import Config
 from detectron2.config import get_cfg
 from detectron2.utils.logger import setup_logger
 from unidet.config import add_unidet_config
 from unidet.predictor import UnifiedVisualizationDemo
-from utils import *
+from utils.config import Config
+from utils.utils import *
 
 
 def setup_cfg(args):
@@ -35,49 +35,35 @@ def setup_cfg(args):
     return cfg
 
 
-def get_parser():
-    parser = argparse.ArgumentParser(description="Detectron2 demo for builtin models")
-    parser.add_argument(
-        "--opts",
-        help="Modify config options using the command-line 'KEY VALUE' pairs",
-        default=[],
-        nargs=argparse.REMAINDER,
-    )
+script_config = "../intercutmix/config.json"
+conf = Config(script_config)
+dataset_path = Path(conf.ucf101.path)
+output_video_dir = Path(conf.unidet.detect.output.video)
+output_json_dir = Path(conf.unidet.detect.output.json)
 
-    return parser
-
-
-conf = Config("config.json")
-input_path = Path(conf.ucf101.path)
-output_path = Path(conf.unidet.output)
-config_file = Path(conf.unidet.config)
-checkpoint = Path(conf.unidet.checkpoint)
-
-assert_file(config_file)
-assert_dir(input_path)
-assert_dir(output_path)
-assert_file(checkpoint)
-
-parallel = False
+assert_dir(dataset_path, "Dataset path")
+assert_file(conf.unidet.detect.config, "Configuration", ".yaml")
+assert_file(conf.unidet.detect.checkpoint, "Checkpoint", ".pth")
 
 mp.set_start_method("spawn", force=True)
-args = get_parser().parse_args()
+
+args = argparse.ArgumentParser()
+args.config_file = conf.unidet.detect.config
+args.confidence_threshold = conf.unidet.detect.confidence
+args.parallel = conf.unidet.detect.parallel
+args.opts = ["MODEL.WEIGHTS", conf.unidet.detect.checkpoint]
+
 setup_logger(name="fvcore")
 logger = setup_logger()
 logger.info("Arguments: " + str(args))
 
-args.config_file = conf.unidet.config
-args.confidence_threshold = conf.unidet.confidence
-args.parallel = parallel
-args.opts = ["MODEL.WEIGHTS", conf.unidet.checkpoint]
-
 cfg = setup_cfg(args)
-demo = UnifiedVisualizationDemo(cfg, parallel=parallel)
-n_videos = sum(1 for f in input_path.glob(f"**/*{conf.ucf101.ext}"))
+demo = UnifiedVisualizationDemo(cfg, parallel=conf.unidet.detect.parallel)
+n_videos = count_files(dataset_path, ext=conf.ucf101.ext)
 fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 
-with tqdm.tqdm(total=n_videos) as bar:
-    for action in input_path.iterdir():
+with tqdm(total=n_videos) as bar:
+    for action in dataset_path.iterdir():
         for file in action.iterdir():
             bar.set_description(file.name)
 
@@ -89,7 +75,7 @@ with tqdm.tqdm(total=n_videos) as bar:
             detection_data = {}
             gen = demo.run_on_video(input_video)
             output_video_path = (
-                output_path / action.name / file.with_suffix(".mp4").name
+                output_video_dir / action.name / file.with_suffix(".mp4").name
             )
 
             output_video_path.parent.mkdir(parents=True, exist_ok=True)
@@ -122,7 +108,7 @@ with tqdm.tqdm(total=n_videos) as bar:
             video_writer.release()
 
             output_json_path = (
-                output_path / action.name / file.with_suffix(".json").name
+                output_json_dir / action.name / file.with_suffix(".json").name
             )
 
             output_json_path.parent.mkdir(parents=True, exist_ok=True)
@@ -131,3 +117,5 @@ with tqdm.tqdm(total=n_videos) as bar:
                 json.dump(detection_data, json_file)
 
             bar.update(1)
+            break
+        break
