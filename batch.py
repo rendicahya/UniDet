@@ -15,7 +15,7 @@ from detectron2.utils.logger import setup_logger
 from unidet.config import add_unidet_config
 from unidet.predictor import UnifiedVisualizationDemo
 from utils.config import Config
-from utils.utils import *
+from utils.file_utils import *
 
 
 def setup_cfg(args):
