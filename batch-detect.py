@@ -125,5 +125,3 @@ with tqdm(total=n_videos) as bar:
                 json.dump(detection_data, json_file)
 
             bar.update(1)
-            break
-        break
