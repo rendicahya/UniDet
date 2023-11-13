@@ -4,20 +4,21 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-from config import Config
+from utils.config import Config
 from tqdm import tqdm
 from utils.file_utils import *
 
-conf = Config("../intercutmix/config.json")
+config_file = "../intercutmix/config.json"
+conf = Config(config_file)
 dataset_path = Path(conf.ucf101.path)
-unidet_json_path = Path(conf.unidet.output.json)
-relevant_object_json = Path(conf.unidet.relevancy.json)
-confidence_thres = conf.unidet.confidence
+unidet_json_path = Path(conf.unidet.detect.output.json)
+relevant_object_json = Path(conf.relevancy.json)
+confidence_thres = conf.unidet.detect.confidence
 unified_label = "datasets/label_spaces/learned_mAP.json"
-output_video_path = Path(conf.unidet.output.video.path)
-output_mask_dir = Path(conf.unidet.output.mask.path)
+output_video_path = Path(conf.unidet.select.output.video.path)
+output_mask_dir = Path(conf.unidet.select.output.mask.path)
 
-assert_file("config.json", "Configuration", ".json")
+assert_file(config_file, "Configuration", ".json")
 assert_dir(dataset_path, "Dataset path")
 assert_dir(unidet_json_path, "UniDet JSON path")
 assert_file(relevant_object_json, "Relevant object JSON", ".json")
@@ -57,7 +58,7 @@ with tqdm(total=n_files) as bar:
             height = int(input_video.get(cv2.CAP_PROP_FRAME_HEIGHT))
             fps = float(input_video.get(cv2.CAP_PROP_FPS))
 
-            if conf.unidet.output.video.generate:
+            if conf.unidet.select.output.video.generate:
                 output_video = (
                     output_video_path / action.name / file.with_suffix(".mp4").name
                 )
@@ -107,7 +108,7 @@ with tqdm(total=n_files) as bar:
 
                     cv2.imwrite(str(output_mask_path), output_mask)
 
-                    if conf.unidet.output.video.generate:
+                    if conf.unidet.select.output.video.generate:
                         text = f"{thing_classes[class_id]} {confidence:.02}"
                         font = cv2.FONT_HERSHEY_PLAIN
                         font_size = 1.2
@@ -140,12 +141,12 @@ with tqdm(total=n_files) as bar:
                             font_weight,
                         )
 
-                if conf.unidet.output.video.generate:
+                if conf.unidet.select.output.video.generate:
                     video_writer.write(frame)
 
                 i += 1
 
-            if conf.unidet.output.video.generate:
+            if conf.unidet.select.output.video.generate:
                 video_writer.release()
 
             input_video.release()
