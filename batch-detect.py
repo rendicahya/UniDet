@@ -1,6 +1,6 @@
 """
-This script detects objects in videos and generates videos as well as JSON files.
-This script can only be run after the relevancy_matrix.py and relevancy_list.py scripts.
+This script detects objects in videos and generates the detection in JSON files and optionally outputs the videos .
+This script can only be run after obtaining the relevancy lists via relevancy.py.
 """
 
 import argparse
@@ -37,13 +37,15 @@ def setup_cfg(args):
 
 script_config = "../intercutmix/config.json"
 conf = Config(script_config)
-dataset_path = Path(conf.ucf101.path)
-output_video_dir = Path(conf.unidet.detect.output.video)
+output_video_dir = Path(conf.unidet.detect.output.video.path)
 output_json_dir = Path(conf.unidet.detect.output.json)
 
-assert_dir(dataset_path, "Dataset path")
 assert_file(conf.unidet.detect.config, "Configuration", ".yaml")
 assert_file(conf.unidet.detect.checkpoint, "Checkpoint", ".pth")
+
+if conf.unidet.detect.output.video:
+    dataset_path = Path(conf.ucf101.path)
+    assert_dir(dataset_path, "Dataset path")
 
 mp.set_start_method("spawn", force=True)
 
@@ -74,22 +76,26 @@ with tqdm(total=n_videos) as bar:
             n_frames = int(input_video.get(cv2.CAP_PROP_FRAME_COUNT))
             detection_data = {}
             gen = demo.run_on_video(input_video)
-            output_video_path = (
-                output_video_dir / action.name / file.with_suffix(".mp4").name
-            )
 
-            output_video_path.parent.mkdir(parents=True, exist_ok=True)
+            if conf.unidet.detect.output.video:
+                output_video_path = (
+                    output_video_dir / action.name / file.with_suffix(".mp4").name
+                )
 
-            video_writer = cv2.VideoWriter(
-                str(output_video_path),
-                fourcc,
-                fps,
-                (width, height),
-            )
+                output_video_path.parent.mkdir(parents=True, exist_ok=True)
+
+                video_writer = cv2.VideoWriter(
+                    str(output_video_path),
+                    fourcc,
+                    fps,
+                    (width, height),
+                )
 
             for i, (viz, pred) in enumerate(gen):
                 bar.set_description(f"{file.name} ({i}/{n_frames})")
-                video_writer.write(viz)
+
+                if conf.unidet.detect.output.video:
+                    video_writer.write(viz)
 
                 detection_data.update(
                     {
@@ -105,7 +111,9 @@ with tqdm(total=n_videos) as bar:
                 )
 
             input_video.release()
-            video_writer.release()
+
+            if conf.unidet.detect.output.video:
+                video_writer.release()
 
             output_json_path = (
                 output_json_dir / action.name / file.with_suffix(".json").name
