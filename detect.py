@@ -1,6 +1,6 @@
 """
-This script detects objects in videos and
-generates videos as well as JSON files.
+This script detects objects in videos and generates videos as well as JSON files.
+This script can only be run after the relevancy_matrix.py and relevancy_list.py scripts.
 """
 
 import argparse
