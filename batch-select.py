@@ -15,7 +15,7 @@ unidet_json_path = Path(conf.unidet.detect.output.json)
 relevant_object_json = Path(conf.relevancy.json)
 confidence_thres = conf.unidet.detect.confidence
 unified_label = "datasets/label_spaces/learned_mAP.json"
-output_video_path = Path(conf.unidet.select.output.video.path)
+output_video_dir = Path(conf.unidet.select.output.video.path)
 output_mask_dir = Path(conf.unidet.select.output.mask.path)
 
 assert_file(config_file, ".json")
@@ -59,14 +59,14 @@ with tqdm(total=n_files) as bar:
             fps = float(input_video.get(cv2.CAP_PROP_FPS))
 
             if conf.unidet.select.output.video.generate:
-                output_video = (
-                    output_video_path / action.name / file.with_suffix(".mp4").name
+                output_video_path = (
+                    output_video_dir / action.name / file.with_suffix(".mp4").name
                 )
 
-                output_video.parent.mkdir(parents=True, exist_ok=True)
+                output_video_path.parent.mkdir(parents=True, exist_ok=True)
 
                 video_writer = cv2.VideoWriter(
-                    str(output_video),
+                    str(output_video_path),
                     fourcc,
                     fps,
                     (width, height),
