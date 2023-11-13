@@ -18,11 +18,11 @@ unified_label = "datasets/label_spaces/learned_mAP.json"
 output_video_path = Path(conf.unidet.select.output.video.path)
 output_mask_dir = Path(conf.unidet.select.output.mask.path)
 
-assert_file(config_file, "Configuration", ".json")
-assert_dir(dataset_path, "Dataset path")
-assert_dir(unidet_json_path, "UniDet JSON path")
-assert_file(relevant_object_json, "Relevant object JSON", ".json")
-assert_file(unified_label, "Unified label", ".json")
+assert_file(config_file, ".json")
+assert_dir(dataset_path)
+assert_dir(unidet_json_path)
+assert_file(relevant_object_json, ".json")
+assert_file(unified_label, ".json")
 
 n_files = count_files(dataset_path, ext=conf.ucf101.ext)
 

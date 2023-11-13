@@ -40,12 +40,12 @@ conf = Config(script_config)
 output_video_dir = Path(conf.unidet.detect.output.video.path)
 output_json_dir = Path(conf.unidet.detect.output.json)
 
-assert_file(conf.unidet.detect.config, "Configuration", ".yaml")
-assert_file(conf.unidet.detect.checkpoint, "Checkpoint", ".pth")
+assert_file(conf.unidet.detect.config, ".yaml")
+assert_file(conf.unidet.detect.checkpoint, ".pth")
 
 if conf.unidet.detect.output.video:
     dataset_path = Path(conf.ucf101.path)
-    assert_dir(dataset_path, "Dataset path")
+    assert_dir(dataset_path)
 
 mp.set_start_method("spawn", force=True)
 
