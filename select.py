@@ -10,8 +10,8 @@ from utils.file_utils import *
 
 conf = Config("../intercutmix/config.json")
 dataset_path = Path(conf.ucf101.path)
-unidet_json_path = Path(conf.unidet.input.json)
-relevant_object_json = Path(conf.relevancy.json)
+unidet_json_path = Path(conf.unidet.output.json)
+relevant_object_json = Path(conf.unidet.relevancy.json)
 confidence_thres = conf.unidet.confidence
 unified_label = "datasets/label_spaces/learned_mAP.json"
 output_video_path = Path(conf.unidet.output.video.path)
