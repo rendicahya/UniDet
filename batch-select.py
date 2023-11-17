@@ -4,9 +4,8 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-from utils.config import Config
 from tqdm import tqdm
-from utils.file_utils import *
+from utils import Config, assert_dir, assert_file, count_files
 
 config_file = "../intercutmix/config.json"
 conf = Config(config_file)
@@ -16,9 +15,10 @@ relevant_object_json = Path(conf.relevancy.json)
 confidence_thres = conf.unidet.detect.confidence
 unified_label = "datasets/label_spaces/learned_mAP.json"
 output_video_dir = Path(conf.unidet.select.output.video.path)
-output_mask_dir = Path(conf.unidet.select.output.mask.path)
+output_mask_dir = Path(conf.unidet.select.output.mask)
 
 assert_file(config_file, ".json")
+assert conf.unidet.select.mode in ["actorcutmix", "intercutmix"]
 assert_dir(dataset_path)
 assert_dir(unidet_json_path)
 assert_file(relevant_object_json, ".json")
@@ -48,7 +48,10 @@ fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 
 with tqdm(total=n_files) as bar:
     for action in dataset_path.iterdir():
-        relevant_obj = [*relevant_ids[action.name], *common_ids]
+        if conf.unidet.select.mode == "actorcutmix":
+            target_obj = common_ids
+        elif conf.unidet.select.mode == "intercutmix":
+            target_obj = [*relevant_ids[action.name], *common_ids]
 
         for file in action.iterdir():
             bar.set_description(file.name)
@@ -93,14 +96,14 @@ with tqdm(total=n_files) as bar:
                     continue
 
                 output_mask_path = (
-                    output_mask_dir / action.name / file.name / f"{i:05}.png"
+                    output_mask_dir / action.name / file.stem / f"{i:05}.png"
                 )
                 output_mask = np.zeros(frame.shape)
 
                 output_mask_path.parent.mkdir(exist_ok=True, parents=True)
 
                 for box, confidence, class_id in box_data[str(i)]:
-                    if confidence < confidence_thres or class_id not in relevant_obj:
+                    if confidence < confidence_thres or class_id not in target_obj:
                         continue
 
                     x1, y1, x2, y2 = [round(i) for i in box]
