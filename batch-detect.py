@@ -12,10 +12,11 @@ import cv2
 import tqdm
 from detectron2.config import get_cfg
 from detectron2.utils.logger import setup_logger
+from python_assert import assert_dir
+from python_config import Config
+from python_file import count_files
 from unidet.config import add_unidet_config
 from unidet.predictor import UnifiedVisualizationDemo
-from utils.config import Config
-from utils.file_utils import *
 
 
 def setup_cfg(args):
