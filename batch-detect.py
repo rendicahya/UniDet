@@ -1,5 +1,5 @@
 """
-This script detects objects in videos and generates the detection in JSON files and optionally outputs the videos .
+This script detects objects in videos and stores the detection results in JSON files and optionally outputs the videos.
 This script can only be run after obtaining the relevancy lists via relevancy.py.
 """
 
@@ -10,9 +10,9 @@ from pathlib import Path
 
 import cv2
 import tqdm
+from assertpy.assertpy import assert_that
 from detectron2.config import get_cfg
 from detectron2.utils.logger import setup_logger
-from python_assert import assert_dir
 from python_config import Config
 from python_file import count_files
 from unidet.config import add_unidet_config
@@ -36,13 +36,13 @@ def setup_cfg(args):
     return cfg
 
 
-script_config = "../intercutmix/config.json"
-conf = Config(script_config)
+conf = Config("../intercutmix/config.json")
+
+assert_that(conf.unidet.detect.config).is_file().is_readable()
+assert_that(conf.unidet.detect.checkpoint).is_file().is_readable()
+
 output_video_dir = Path(conf.unidet.detect.output.video.path)
 output_json_dir = Path(conf.unidet.detect.output.json)
-
-assert_file(conf.unidet.detect.config, ".yaml")
-assert_file(conf.unidet.detect.checkpoint, ".pth")
 
 if conf.unidet.detect.output.video:
     dataset_path = Path(conf.ucf101.path)

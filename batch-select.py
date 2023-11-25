@@ -4,14 +4,13 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-from python_assert import assert_dir, assert_file
+from assertpy.assertpy import assert_that
 from python_config import Config
 from python_file import count_files
 from tqdm import tqdm
 
-config_file = "../intercutmix/config.json"
-conf = Config(config_file)
-dataset_path = Path(conf.ucf101.path)
+conf = Config("../intercutmix/config.json")
+dataset_path = Path(conf.unidet.select.dataset)
 unidet_json_path = Path(conf.unidet.detect.output.json)
 relevant_object_json = Path(conf.relevancy.json)
 confidence_thres = conf.unidet.detect.confidence
@@ -19,12 +18,11 @@ unified_label = "datasets/label_spaces/learned_mAP.json"
 output_video_dir = Path(conf.unidet.select.output.video.path)
 output_mask_dir = Path(conf.unidet.select.output.mask)
 
-assert_file(config_file, ".json")
-assert conf.unidet.select.mode in ["actorcutmix", "intercutmix"]
-assert_dir(dataset_path)
-assert_dir(unidet_json_path)
-assert_file(relevant_object_json, ".json")
-assert_file(unified_label, ".json")
+assert_that(conf.unidet.select.mode).is_in("actorcutmix", "intercutmix")
+assert_that(dataset_path).is_directory().is_readable()
+assert_that(unidet_json_path).is_directory().is_readable()
+assert_that(relevant_object_json).is_file().is_readable()
+assert_that(unified_label).is_file().is_readable()
 
 n_files = count_files(dataset_path, ext=conf.ucf101.ext)
 
