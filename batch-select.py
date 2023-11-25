@@ -7,13 +7,14 @@ import numpy as np
 from assertpy.assertpy import assert_that
 from python_config import Config
 from python_file import count_files
+from python_video import frames_to_video, video_frames
 from tqdm import tqdm
 
 conf = Config("../intercutmix/config.json")
-dataset_path = Path(conf.unidet.select.dataset)
-unidet_json_path = Path(conf.unidet.detect.output.json)
+dataset_path = Path(conf.unidet.select.dataset.path)
+unidet_json_path = Path(conf.unidet.select.json)
 relevant_object_json = Path(conf.relevancy.json)
-confidence_thres = conf.unidet.detect.confidence
+confidence_thres = conf.unidet.select.confidence
 unified_label = "datasets/label_spaces/learned_mAP.json"
 output_video_dir = Path(conf.unidet.select.output.video.path)
 output_mask_dir = Path(conf.unidet.select.output.mask)
@@ -47,6 +48,7 @@ common_ids = [thing_classes.index(i) for i in common_obj]
 fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 bar = tqdm(total=n_files)
 
+
 for action in dataset_path.iterdir():
     if conf.unidet.select.mode == "actorcutmix":
         target_obj = common_ids
@@ -54,26 +56,15 @@ for action in dataset_path.iterdir():
         target_obj = [*relevant_ids[action.name], *common_ids]
 
     for file in action.iterdir():
+        if file.suffix != conf.unidet.select.dataset.ext:
+            continue
+
         bar.set_description(file.name)
 
-        input_video = cv2.VideoCapture(str(file))
-        width = int(input_video.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(input_video.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        fps = float(input_video.get(cv2.CAP_PROP_FPS))
+        input_frames = video_frames(file)
 
         if conf.unidet.select.output.video.generate:
-            output_video_path = (
-                output_video_dir / action.name / file.with_suffix(".mp4").name
-            )
-
-            output_video_path.parent.mkdir(parents=True, exist_ok=True)
-
-            video_writer = cv2.VideoWriter(
-                str(output_video_path),
-                fourcc,
-                fps,
-                (width, height),
-            )
+            output_frames = []
 
         json_file = unidet_json_path / action.name / file.with_suffix(".json").name
 
@@ -84,14 +75,7 @@ for action in dataset_path.iterdir():
         with open(json_file, "r") as f:
             box_data = json.load(f)
 
-        i = 0
-
-        while input_video.isOpened():
-            ret, frame = input_video.read()
-
-            if not ret:
-                break
-
+        for i, frame in enumerate(input_frames):
             if str(i) not in box_data.keys():
                 continue
 
@@ -141,14 +125,24 @@ for action in dataset_path.iterdir():
                     )
 
             if conf.unidet.select.output.video.generate:
-                video_writer.write(frame)
-
-            i += 1
+                output_frames.append(frame)
 
         if conf.unidet.select.output.video.generate:
-            video_writer.release()
+            output_video_path = (
+                output_video_dir / action.name / file.with_suffix(".mp4").name
+            )
 
-        input_video.release()
+            output_video_path.parent.mkdir(parents=True, exist_ok=True)
+
+            grayscale_op = lambda f: cv2.cvtColor(f, cv2.COLOR_BGR2RGB)
+            bbox_frames_rgb = (grayscale_op(f) for f in output_frames)
+
+            frames_to_video(
+                bbox_frames_rgb,
+                output_video_path,
+                writer=conf.unidet.select.output.video.writer,
+            )
+
         bar.update(1)
 
 bar.close()
