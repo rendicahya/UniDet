@@ -10,3 +10,6 @@
 [submodule "python_file"]
 	path = python_file
 	url = https://github.com/rendicahya/python_file.git
+[submodule "assertpy"]
+	path = assertpy
+	url = https://github.com/rendicahya/assertpy.git
