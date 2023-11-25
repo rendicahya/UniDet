@@ -1,12 +1,6 @@
-[submodule "utils"]
-	path = utils
-	url = https://github.com/rendicahya/python-utils.git
 [submodule "python_config"]
 	path = python_config
 	url = https://github.com/rendicahya/python_config.git
-[submodule "python_assert"]
-	path = python_assert
-	url = https://github.com/rendicahya/python_assert.git
 [submodule "python_file"]
 	path = python_file
 	url = https://github.com/rendicahya/python_file.git
