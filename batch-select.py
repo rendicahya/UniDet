@@ -11,8 +11,8 @@ from python_video import frames_to_video, video_frames
 from tqdm import tqdm
 
 conf = Config("../intercutmix/config.json")
-dataset_path = Path(conf.unidet.select.dataset.path)
-unidet_json_path = Path(conf.unidet.select.json)
+dataset_dir = Path(conf.unidet.select.dataset.path)
+unidet_json_dir = Path(conf.unidet.select.json)
 relevant_object_json = Path(conf.relevancy.json)
 confidence_thres = conf.unidet.select.confidence
 unified_label = "datasets/label_spaces/learned_mAP.json"
@@ -20,12 +20,12 @@ output_video_dir = Path(conf.unidet.select.output.video.path)
 output_mask_dir = Path(conf.unidet.select.output.mask)
 
 assert_that(conf.unidet.select.mode).is_in("actorcutmix", "intercutmix")
-assert_that(dataset_path).is_directory().is_readable()
-assert_that(unidet_json_path).is_directory().is_readable()
+assert_that(dataset_dir).is_directory().is_readable()
+assert_that(unidet_json_dir).is_directory().is_readable()
 assert_that(relevant_object_json).is_file().is_readable()
 assert_that(unified_label).is_file().is_readable()
 
-n_files = count_files(dataset_path, ext=conf.ucf101.ext)
+n_files = count_files(dataset_dir, ext=conf.ucf101.ext)
 
 with open(unified_label, "r") as f:
     unified_label_file = json.load(f)
@@ -47,9 +47,9 @@ common_obj = "Person", "Man", "Woman"
 common_ids = [thing_classes.index(i) for i in common_obj]
 fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 bar = tqdm(total=n_files)
+font, font_size, font_weight = cv2.FONT_HERSHEY_PLAIN, 1.2, 1
 
-
-for action in dataset_path.iterdir():
+for action in dataset_dir.iterdir():
     if conf.unidet.select.mode == "actorcutmix":
         target_obj = common_ids
     elif conf.unidet.select.mode == "intercutmix":
@@ -66,82 +66,85 @@ for action in dataset_path.iterdir():
         if conf.unidet.select.output.video.generate:
             output_frames = []
 
-        json_file = unidet_json_path / action.name / file.with_suffix(".json").name
+        json_path = unidet_json_dir / action.name / file.with_suffix(".json").name
 
-        if not json_file.exists():
-            print("JSON file not found:", json_file.name)
+        if not json_path.exists():
+            print("JSON file not found:", json_path.name)
             continue
 
-        with open(json_file, "r") as f:
+        with open(json_path, "r") as f:
             box_data = json.load(f)
 
         for i, frame in enumerate(input_frames):
-            if str(i) not in box_data.keys():
-                continue
-
             output_mask_path = output_mask_dir / action.name / file.stem / f"{i:05}.png"
-            output_mask = np.zeros(frame.shape)
+            mask = np.zeros(frame.shape)
 
             output_mask_path.parent.mkdir(exist_ok=True, parents=True)
+
+            if str(i) in box_data.keys():
+                for box, confidence, class_id in box_data[str(i)]:
+                    if confidence < confidence_thres or class_id not in target_obj:
+                        continue
+
+                    x1, y1, x2, y2 = [round(i) for i in box]
+                    mask[y1:y2, x1:x2] = 255
+
+            cv2.imwrite(str(output_mask_path), mask)
+
+            if not conf.unidet.select.output.video.generate:
+                continue
 
             for box, confidence, class_id in box_data[str(i)]:
                 if confidence < confidence_thres or class_id not in target_obj:
                     continue
 
                 x1, y1, x2, y2 = [round(i) for i in box]
-                output_mask[y1:y2, x1:x2] = 255
+                text = f"{thing_classes[class_id]} {confidence:.02}"
+                text_size = cv2.getTextSize(text, font, font_size, font_weight)[0]
+                text_width, text_height = text_size[:2]
+                box_thickness = 2
 
-                cv2.imwrite(str(output_mask_path), output_mask)
+                cv2.rectangle(
+                    frame, (x1, y1), (x2, y2), colors[class_id], box_thickness
+                )
 
-                if conf.unidet.select.output.video.generate:
-                    text = f"{thing_classes[class_id]} {confidence:.02}"
-                    font = cv2.FONT_HERSHEY_PLAIN
-                    font_size = 1.2
-                    font_weight = 1
-                    text_size = cv2.getTextSize(text, font, font_size, font_weight)[0]
-                    text_width, text_height = text_size[:2]
-                    text_x = x1
-                    text_y = y1
-                    box_thickness = 2
+                cv2.rectangle(
+                    frame,
+                    (x1 - 1, y1 - int(text_height * 2)),
+                    (x1 + int(text_width * 1.1), y1),
+                    colors[class_id],
+                    cv2.FILLED,
+                )
 
-                    cv2.rectangle(
-                        frame, (x1, y1), (x2, y2), colors[class_id], box_thickness
-                    )
-                    cv2.rectangle(
-                        frame,
-                        (text_x - 1, text_y - int(text_height * 2)),
-                        (text_x + int(text_width * 1.1), text_y),
-                        colors[class_id],
-                        cv2.FILLED,
-                    )
-                    cv2.putText(
-                        frame,
-                        text,
-                        (x1 + 3, y1 - 5),
-                        font,
-                        font_size,
-                        (255, 255, 255),
-                        font_weight,
-                    )
+                cv2.putText(
+                    frame,
+                    text,
+                    (x1 + 3, y1 - 5),
+                    font,
+                    font_size,
+                    (255, 255, 255),
+                    font_weight,
+                )
 
-            if conf.unidet.select.output.video.generate:
-                output_frames.append(frame)
+            output_frames.append(frame)
 
-        if conf.unidet.select.output.video.generate:
-            output_video_path = (
-                output_video_dir / action.name / file.with_suffix(".mp4").name
-            )
+        if not conf.unidet.select.output.video.generate:
+            continue
 
-            output_video_path.parent.mkdir(parents=True, exist_ok=True)
+        output_video_path = (
+            output_video_dir / action.name / file.with_suffix(".mp4").name
+        )
 
-            grayscale_op = lambda f: cv2.cvtColor(f, cv2.COLOR_BGR2RGB)
-            bbox_frames_rgb = (grayscale_op(f) for f in output_frames)
+        output_video_path.parent.mkdir(parents=True, exist_ok=True)
 
-            frames_to_video(
-                bbox_frames_rgb,
-                output_video_path,
-                writer=conf.unidet.select.output.video.writer,
-            )
+        grayscale_op = lambda f: cv2.cvtColor(f, cv2.COLOR_BGR2RGB)
+        bbox_frames_rgb = (grayscale_op(f) for f in output_frames)
+
+        frames_to_video(
+            bbox_frames_rgb,
+            output_video_path,
+            writer=conf.unidet.select.output.video.writer,
+        )
 
         bar.update(1)
 
