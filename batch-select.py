@@ -7,7 +7,7 @@ import numpy as np
 from assertpy.assertpy import assert_that
 from python_config import Config
 from python_file import count_files
-from python_video import frames_to_video, video_frames
+from python_video import frames_to_video, video_frames, video_info
 from tqdm import tqdm
 
 conf = Config("../intercutmix/config.json")
@@ -45,7 +45,6 @@ colors = [
 
 common_obj = "Person", "Man", "Woman"
 common_ids = [thing_classes.index(i) for i in common_obj]
-fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 bar = tqdm(total=n_files)
 font, font_size, font_weight = cv2.FONT_HERSHEY_PLAIN, 1.2, 1
 
@@ -61,7 +60,7 @@ for action in dataset_dir.iterdir():
 
         bar.set_description(file.name)
 
-        input_frames = video_frames(file)
+        input_frames = video_frames(file, reader=conf.unidet.select.video_reader)
 
         if conf.unidet.select.output.video.generate:
             output_frames = []
@@ -76,18 +75,20 @@ for action in dataset_dir.iterdir():
             box_data = json.load(f)
 
         for i, frame in enumerate(input_frames):
-            output_mask_path = output_mask_dir / action.name / file.stem / f"{i:05}.png"
+            if str(i) not in box_data.keys():
+                continue
+
             mask = np.zeros(frame.shape)
+            output_mask_path = output_mask_dir / action.name / file.stem / f"{i:05}.png"
 
             output_mask_path.parent.mkdir(exist_ok=True, parents=True)
 
-            if str(i) in box_data.keys():
-                for box, confidence, class_id in box_data[str(i)]:
-                    if confidence < confidence_thres or class_id not in target_obj:
-                        continue
+            for box, confidence, class_id in box_data[str(i)]:
+                if confidence < confidence_thres or class_id not in target_obj:
+                    continue
 
-                    x1, y1, x2, y2 = [round(i) for i in box]
-                    mask[y1:y2, x1:x2] = 255
+                x1, y1, x2, y2 = [round(i) for i in box]
+                mask[y1:y2, x1:x2] = 255
 
             cv2.imwrite(str(output_mask_path), mask)
 
@@ -137,11 +138,8 @@ for action in dataset_dir.iterdir():
 
         output_video_path.parent.mkdir(parents=True, exist_ok=True)
 
-        grayscale_op = lambda f: cv2.cvtColor(f, cv2.COLOR_BGR2RGB)
-        bbox_frames_rgb = (grayscale_op(f) for f in output_frames)
-
         frames_to_video(
-            bbox_frames_rgb,
+            output_frames,
             output_video_path,
             writer=conf.unidet.select.output.video.writer,
         )
