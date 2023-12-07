@@ -7,7 +7,7 @@ import numpy as np
 from assertpy.assertpy import assert_that
 from python_config import Config
 from python_file import count_files
-from python_video import frames_to_video, video_frames, video_info
+from python_video import frames_to_video, video_frames
 from tqdm import tqdm
 
 conf = Config("../intercutmix/config.json")
@@ -17,7 +17,9 @@ relevant_object_json = Path(conf.relevancy.json)
 confidence_thres = conf.unidet.select.confidence
 unified_label = "datasets/label_spaces/learned_mAP.json"
 output_video_dir = Path(conf.unidet.select.output.video.path)
-output_mask_dir = Path(conf.unidet.select.output.mask)
+output_mask_dir = Path(conf.unidet.select.output.mask.path)
+mask_n_digits = conf.unidet.select.output.mask.n_digits
+mask_ext = conf.unidet.select.output.mask.ext
 
 assert_that(conf.unidet.select.mode).is_in("actorcutmix", "intercutmix")
 assert_that(dataset_dir).is_directory().is_readable()
@@ -79,7 +81,12 @@ for action in dataset_dir.iterdir():
                 continue
 
             mask = np.zeros(frame.shape)
-            output_mask_path = output_mask_dir / action.name / file.stem / f"{i:05}.png"
+            output_mask_path = (
+                output_mask_dir
+                / action.name
+                / file.stem
+                / (f"%0{mask_n_digits}d{mask_ext}" % i)
+            )
 
             output_mask_path.parent.mkdir(exist_ok=True, parents=True)
 
@@ -129,6 +136,8 @@ for action in dataset_dir.iterdir():
 
             output_frames.append(frame)
 
+        bar.update(1)
+
         if not conf.unidet.select.output.video.generate:
             continue
 
@@ -143,7 +152,5 @@ for action in dataset_dir.iterdir():
             output_video_path,
             writer=conf.unidet.select.output.video.writer,
         )
-
-        bar.update(1)
 
 bar.close()
