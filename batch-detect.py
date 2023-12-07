@@ -1,5 +1,5 @@
 """
-This script detects objects in videos and stores the detection results in JSON files and optionally outputs the videos.
+This script detects objects in videos and stores the detection results in JSON files and optionally outputs bounding box-annotated videos.
 This script can only be run after obtaining the relevancy lists via relevancy.py.
 This script uses GPU and takes several seconds to process a short video.
 """
