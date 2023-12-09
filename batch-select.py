@@ -10,7 +10,7 @@ from python_file import count_files
 from python_video import frames_to_video, video_frames
 from tqdm import tqdm
 
-conf = Config("../intercutmix/config.json")
+conf = Config("../config.json")
 dataset_dir = Path(conf.unidet.select.dataset.path)
 unidet_json_dir = Path(conf.unidet.select.json)
 relevant_object_json = Path(conf.relevancy.json)

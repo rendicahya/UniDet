@@ -38,7 +38,7 @@ def setup_cfg(args):
     return cfg
 
 
-conf = Config("../intercutmix/config.json")
+conf = Config("../config.json")
 
 dataset_path = Path(conf.unidet.detect.dataset.path)
 output_video_dir = Path(conf.unidet.detect.output.video.path)
