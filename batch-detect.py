@@ -15,7 +15,7 @@ from detectron2.config import get_cfg
 from detectron2.utils.logger import setup_logger
 from python_config import Config
 from python_file import count_files
-from python_video import video_info, video_writer_like
+from python_video import frames_to_video, video_info, video_writer_like
 from tqdm import tqdm
 from unidet.config import add_unidet_config
 from unidet.predictor import UnifiedVisualizationDemo
@@ -73,21 +73,14 @@ for action in dataset_path.iterdir():
         info = video_info(file)
         n_frames = int(input_video.get(cv2.CAP_PROP_FRAME_COUNT))
         detection_data = {}
+        output_frames = []
         gen = demo.run_on_video(input_video)
-
-        if conf.unidet.detect.output.video.generate:
-            output_video_path = (
-                output_video_dir / action.name / file.with_suffix(".mp4").name
-            )
-
-            output_video_path.parent.mkdir(parents=True, exist_ok=True)
-            video_writer = video_writer_like(file, output_video_path)
 
         for i, (viz, pred) in enumerate(gen):
             bar.set_description(f"{file.name} ({i}/{n_frames})")
 
             if conf.unidet.detect.output.video.generate:
-                video_writer.write(viz)
+                output_frames.append(viz)
 
             detection_data.update(
                 {
@@ -104,9 +97,6 @@ for action in dataset_path.iterdir():
 
         input_video.release()
 
-        if conf.unidet.detect.output.video:
-            video_writer.release()
-
         output_json_path = (
             output_json_dir / action.name / file.with_suffix(".json").name
         )
@@ -115,6 +105,16 @@ for action in dataset_path.iterdir():
 
         with open(output_json_path, "w") as json_file:
             json.dump(detection_data, json_file)
+
+        if conf.unidet.detect.output.video.generate:
+            output_video_path = (
+                output_video_dir / action.name / file.with_suffix(".mp4").name
+            )
+
+            output_video_path.parent.mkdir(parents=True, exist_ok=True)
+            frames_to_video(
+                output_frames, output_video_path, conf.unidet.detect.output.video.writer
+            )
 
         bar.update(1)
 
