@@ -80,7 +80,8 @@ for action in dataset_path.iterdir():
             bar.set_description(f"{file.name} ({i}/{n_frames})")
 
             if conf.unidet.detect.output.video.generate:
-                output_frames.append(viz)
+                rgb = cv2.cvtColor(viz, cv2.COLOR_BGR2RGB)
+                output_frames.append(rgb)
 
             detection_data.update(
                 {
