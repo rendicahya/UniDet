@@ -18,7 +18,6 @@ confidence_thres = conf.unidet.select.confidence
 unified_label = "datasets/label_spaces/learned_mAP.json"
 output_video_dir = Path(conf.unidet.select.output.video.path)
 output_mask_dir = Path(conf.unidet.select.output.mask.path)
-mask_n_digits = conf.unidet.select.output.mask.n_digits
 mask_ext = conf.unidet.select.output.mask.ext
 
 assert_that(conf.unidet.select.mode).is_in("actorcutmix", "intercutmix")
@@ -85,7 +84,7 @@ for action in dataset_dir.iterdir():
                 output_mask_dir
                 / action.name
                 / file.stem
-                / (f"%0{mask_n_digits}d{mask_ext}" % i)
+                / (f"%05d{mask_ext}" % i)
             )
 
             output_mask_path.parent.mkdir(exist_ok=True, parents=True)
