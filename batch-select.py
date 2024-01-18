@@ -98,42 +98,40 @@ for action in dataset_dir.iterdir():
 
             cv2.imwrite(str(output_mask_path), mask)
 
-            if not conf.unidet.select.output.video.generate:
-                continue
+            if conf.unidet.select.output.video.generate:
+                for box, confidence, class_id in box_data[str(i)]:
+                    if confidence < confidence_thres or class_id not in target_obj:
+                        continue
 
-            for box, confidence, class_id in box_data[str(i)]:
-                if confidence < confidence_thres or class_id not in target_obj:
-                    continue
+                    x1, y1, x2, y2 = [round(i) for i in box]
+                    text = f"{thing_classes[class_id]} {confidence:.02}"
+                    text_size = cv2.getTextSize(text, font, font_size, font_weight)[0]
+                    text_width, text_height = text_size[:2]
+                    box_thickness = 2
 
-                x1, y1, x2, y2 = [round(i) for i in box]
-                text = f"{thing_classes[class_id]} {confidence:.02}"
-                text_size = cv2.getTextSize(text, font, font_size, font_weight)[0]
-                text_width, text_height = text_size[:2]
-                box_thickness = 2
+                    cv2.rectangle(
+                        frame, (x1, y1), (x2, y2), colors[class_id], box_thickness
+                    )
 
-                cv2.rectangle(
-                    frame, (x1, y1), (x2, y2), colors[class_id], box_thickness
-                )
+                    cv2.rectangle(
+                        frame,
+                        (x1 - 1, y1 - int(text_height * 2)),
+                        (x1 + int(text_width * 1.1), y1),
+                        colors[class_id],
+                        cv2.FILLED,
+                    )
 
-                cv2.rectangle(
-                    frame,
-                    (x1 - 1, y1 - int(text_height * 2)),
-                    (x1 + int(text_width * 1.1), y1),
-                    colors[class_id],
-                    cv2.FILLED,
-                )
+                    cv2.putText(
+                        frame,
+                        text,
+                        (x1 + 3, y1 - 5),
+                        font,
+                        font_size,
+                        (255, 255, 255),
+                        font_weight,
+                    )
 
-                cv2.putText(
-                    frame,
-                    text,
-                    (x1 + 3, y1 - 5),
-                    font,
-                    font_size,
-                    (255, 255, 255),
-                    font_weight,
-                )
-
-            output_frames.append(frame)
+                output_frames.append(frame)
 
         bar.update(1)
 
