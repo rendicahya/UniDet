@@ -1,4 +1,5 @@
 import json
+import pickle
 import random
 from pathlib import Path
 
@@ -66,6 +67,9 @@ for action in dataset_dir.iterdir():
         if conf.unidet.select.output.video.generate:
             output_frames = []
 
+        if conf.unidet.select.output.repp.enabled:
+            video_dets = {}
+
         json_path = unidet_json_dir / action.name / file.with_suffix(".json").name
 
         if not json_path.exists():
@@ -79,24 +83,57 @@ for action in dataset_dir.iterdir():
             if str(i) not in box_data.keys():
                 continue
 
-            mask = np.zeros(frame.shape)
-            output_mask_path = (
-                output_mask_dir
-                / action.name
-                / file.stem
-                / (f"%05d{mask_ext}" % i)
-            )
+            if conf.unidet.select.output.repp.enabled:
+                frame_dets = []
+                ih, iw = frame.shape[:-1]
+                width_diff = max(0, (ih - iw) // 2)
+                height_diff = max(0, (iw - ih) // 2)
 
-            output_mask_path.parent.mkdir(exist_ok=True, parents=True)
+                for box, confidence, class_id in box_data[str(i)]:
+                    if confidence < confidence_thres or class_id not in target_obj:
+                        continue
 
-            for box, confidence, class_id in box_data[str(i)]:
-                if confidence < confidence_thres or class_id not in target_obj:
-                    continue
+                    x1, y1, x2, y2 = [round(i) for i in box]
+                    y_min, x_min, y_max, x_max = y1, x1, y2, x2
+                    y_min, x_min = max(0, y_min), max(0, x_min)
+                    y_max, x_max = min(ih, y_max), min(iw, x_max)
+                    width, height = x_max - x_min, y_max - y_min
 
-                x1, y1, x2, y2 = [round(i) for i in box]
-                mask[y1:y2, x1:x2] = 255
+                    if width <= 0 or height <= 0:
+                        continue
 
-            cv2.imwrite(str(output_mask_path), mask)
+                    bbox_center = [
+                        (x_min + width_diff + width / 2) / max(iw, ih),
+                        (y_min + height_diff + height / 2) / max(iw, ih),
+                    ]
+
+                    det_box = {
+                        "image_id": i,
+                        "bbox": [x_min, y_min, width, height],
+                        "scores": confidence,
+                        "bbox_center": bbox_center,
+                    }
+
+                    frame_dets.append(det_box)
+
+                video_dets[str(i)] = frame_dets
+
+            if conf.unidet.select.output.mask.generate:
+                mask = np.zeros(frame.shape)
+                output_mask_path = (
+                    output_mask_dir / action.name / file.stem / (f"%05d{mask_ext}" % i)
+                )
+
+                output_mask_path.parent.mkdir(exist_ok=True, parents=True)
+
+                for box, confidence, class_id in box_data[str(i)]:
+                    if confidence < confidence_thres or class_id not in target_obj:
+                        continue
+
+                    x1, y1, x2, y2 = [round(i) for i in box]
+                    mask[y1:y2, x1:x2] = 255
+
+                cv2.imwrite(str(output_mask_path), mask)
 
             if conf.unidet.select.output.video.generate:
                 for box, confidence, class_id in box_data[str(i)]:
@@ -135,19 +172,32 @@ for action in dataset_dir.iterdir():
 
         bar.update(1)
 
-        if not conf.unidet.select.output.video.generate:
-            continue
+        if conf.unidet.select.output.video.generate:
+            output_video_path = (
+                output_video_dir / action.name / file.with_suffix(".mp4").name
+            )
 
-        output_video_path = (
-            output_video_dir / action.name / file.with_suffix(".mp4").name
-        )
+            output_video_path.parent.mkdir(parents=True, exist_ok=True)
 
-        output_video_path.parent.mkdir(parents=True, exist_ok=True)
+            frames_to_video(
+                output_frames,
+                output_video_path,
+                writer=conf.unidet.select.output.video.writer,
+            )
 
-        frames_to_video(
-            output_frames,
-            output_video_path,
-            writer=conf.unidet.select.output.video.writer,
-        )
+        if conf.unidet.select.output.repp.enabled:
+            output_repp_dir = Path(conf.unidet.select.output.repp.path)
+            output_repp_path = (
+                output_repp_dir / action.name / file.with_suffix(".repp").name
+            )
+
+            file_writer = open(output_repp_path, "wb")
+
+            output_repp_path.parent.mkdir(parents=True, exist_ok=True)
+            pickle.dump((file.name, video_dets))
+            file_writer.close()
+
+        break
+
 
 bar.close()
