@@ -14,11 +14,9 @@ from tqdm import tqdm
 conf = Config("../config.json")
 dataset_dir = Path(conf.unidet.select.dataset.path)
 unidet_json_dir = Path(conf.unidet.select.json)
-relevant_object_json = Path(conf.relevancy.json)
+relevant_object_json = Path.cwd().parent / conf.relevancy.json
 confidence_thres = conf.unidet.select.confidence
 unified_label = "datasets/label_spaces/learned_mAP.json"
-output_video_dir = Path(conf.unidet.select.output.video.path)
-output_mask_dir = Path(conf.unidet.select.output.mask.path)
 mask_ext = conf.unidet.select.output.mask.ext
 
 assert_that(conf.unidet.select.mode).is_in("actorcutmix", "intercutmix")
@@ -83,6 +81,7 @@ for action in dataset_dir.iterdir():
             if str(i) not in box_data.keys():
                 continue
 
+            # Robust-and-efficient-post-processing-for-video-object-detection (REPP)
             if conf.unidet.select.output.repp.enabled:
                 frame_dets = []
                 ih, iw = frame.shape[:-1]
@@ -102,23 +101,24 @@ for action in dataset_dir.iterdir():
                     if width <= 0 or height <= 0:
                         continue
 
-                    bbox_center = [
+                    bbox_center = (
                         (x_min + width_diff + width / 2) / max(iw, ih),
                         (y_min + height_diff + height / 2) / max(iw, ih),
-                    ]
+                    )
 
                     det_box = {
-                        "image_id": i,
+                        "image_id": f"{i:06}",
                         "bbox": [x_min, y_min, width, height],
-                        "scores": confidence,
+                        "scores": [confidence],
                         "bbox_center": bbox_center,
                     }
 
                     frame_dets.append(det_box)
 
-                video_dets[str(i)] = frame_dets
+                video_dets[f"{i:06}"] = frame_dets
 
             if conf.unidet.select.output.mask.generate:
+                output_mask_dir = Path(conf.unidet.select.output.mask.path)
                 mask = np.zeros(frame.shape)
                 output_mask_path = (
                     output_mask_dir / action.name / file.stem / (f"%05d{mask_ext}" % i)
@@ -173,6 +173,7 @@ for action in dataset_dir.iterdir():
         bar.update(1)
 
         if conf.unidet.select.output.video.generate:
+            output_video_dir = Path(conf.unidet.select.output.video.path)
             output_video_path = (
                 output_video_dir / action.name / file.with_suffix(".mp4").name
             )
@@ -186,18 +187,17 @@ for action in dataset_dir.iterdir():
             )
 
         if conf.unidet.select.output.repp.enabled:
-            output_repp_dir = Path(conf.unidet.select.output.repp.path)
+            output_repp_dir = Path.cwd().parent / conf.unidet.select.output.repp.path
             output_repp_path = (
                 output_repp_dir / action.name / file.with_suffix(".repp").name
             )
 
-            file_writer = open(output_repp_path, "wb")
-
             output_repp_path.parent.mkdir(parents=True, exist_ok=True)
-            pickle.dump((file.name, video_dets))
-            file_writer.close()
+
+            with open(output_repp_path, "wb") as f:
+                pickle.dump((file.name, video_dets), f)
 
         break
-
+    break
 
 bar.close()
