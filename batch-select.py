@@ -17,7 +17,6 @@ unidet_json_dir = Path(conf.unidet.select.json)
 relevant_object_json = Path.cwd().parent / conf.relevancy.json
 confidence_thres = conf.unidet.select.confidence
 unified_label = "datasets/label_spaces/learned_mAP.json"
-mask_ext = conf.unidet.select.output.mask.ext
 
 assert_that(conf.unidet.select.mode).is_in("actorcutmix", "intercutmix")
 assert_that(dataset_dir).is_directory().is_readable()
@@ -118,6 +117,7 @@ for action in dataset_dir.iterdir():
                 video_dets[f"{i:06}"] = frame_dets
 
             if conf.unidet.select.output.mask.generate:
+                mask_ext = conf.unidet.select.output.mask.ext
                 output_mask_dir = Path(conf.unidet.select.output.mask.path)
                 mask = np.zeros(frame.shape)
                 output_mask_path = (
