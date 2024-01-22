@@ -17,12 +17,14 @@ unidet_json_dir = Path(conf.unidet.select.json)
 relevant_object_json = Path.cwd().parent / conf.relevancy.json
 confidence_thres = conf.unidet.select.confidence
 unified_label = "datasets/label_spaces/learned_mAP.json"
+common_obj = conf.unidet.select.common_objects
 
 assert_that(conf.unidet.select.mode).is_in("actorcutmix", "intercutmix")
 assert_that(dataset_dir).is_directory().is_readable()
 assert_that(unidet_json_dir).is_directory().is_readable()
 assert_that(relevant_object_json).is_file().is_readable()
 assert_that(unified_label).is_file().is_readable()
+assert_that(common_obj).is_type_of(list)
 
 n_files = count_files(dataset_dir, ext=conf.ucf101.ext)
 
@@ -42,7 +44,6 @@ colors = [
     for _ in range(len(thing_classes))
 ]
 
-common_obj = "Person", "Man", "Woman"
 common_ids = [thing_classes.index(i) for i in common_obj]
 bar = tqdm(total=n_files)
 font, font_size, font_weight = cv2.FONT_HERSHEY_PLAIN, 1.2, 1
@@ -189,15 +190,12 @@ for action in dataset_dir.iterdir():
         if conf.unidet.select.output.repp.enabled:
             output_repp_dir = Path.cwd().parent / conf.unidet.select.output.repp.path
             output_repp_path = (
-                output_repp_dir / action.name / file.with_suffix(".repp").name
+                output_repp_dir / action.name / file.with_suffix(".pckl").name
             )
 
             output_repp_path.parent.mkdir(parents=True, exist_ok=True)
 
             with open(output_repp_path, "wb") as f:
                 pickle.dump((file.name, video_dets), f)
-
-        break
-    break
 
 bar.close()
