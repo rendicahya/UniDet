@@ -12,7 +12,7 @@ from python_video import frames_to_video, video_frames
 from tqdm import tqdm
 
 conf = Config("../config.json")
-dataset_dir = Path(conf.unidet.select.dataset.path)
+dataset_dir = Path.cwd().parent / conf.unidet.select.dataset.path
 unidet_json_dir = Path(conf.unidet.select.json)
 relevant_object_json = Path.cwd().parent / conf.relevancy.json
 confidence_thres = conf.unidet.select.confidence
@@ -25,6 +25,7 @@ assert_that(unidet_json_dir).is_directory().is_readable()
 assert_that(relevant_object_json).is_file().is_readable()
 assert_that(unified_label).is_file().is_readable()
 assert_that(common_obj).is_type_of(list)
+print("Mode:", conf.unidet.select.mode)
 
 n_files = count_files(dataset_dir, ext=conf.ucf101.ext)
 
@@ -171,10 +172,8 @@ for action in dataset_dir.iterdir():
 
                 output_frames.append(frame)
 
-        bar.update(1)
-
         if conf.unidet.select.output.video.generate:
-            output_video_dir = Path(conf.unidet.select.output.video.path)
+            output_video_dir = Path.cwd().parent / conf.unidet.select.output.video.path
             output_video_path = (
                 output_video_dir / action.name / file.with_suffix(".mp4").name
             )
@@ -197,5 +196,7 @@ for action in dataset_dir.iterdir():
 
             with open(output_repp_path, "wb") as f:
                 pickle.dump((file.name, video_dets), f)
+
+        bar.update(1)
 
 bar.close()
