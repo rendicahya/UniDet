@@ -40,9 +40,9 @@ def setup_cfg(args):
 
 conf = Config("../config.json")
 
-dataset_path = Path(conf.unidet.detect.dataset.path)
-output_video_dir = Path(conf.unidet.detect.output.video.path)
-output_json_dir = Path(conf.unidet.detect.output.json)
+dataset_path = Path.cwd().parent / conf.unidet.detect.dataset.path
+output_video_dir = Path.cwd().parent / conf.unidet.detect.output.video.path
+output_json_dir = Path.cwd().parent / conf.unidet.detect.output.json
 
 assert_that(dataset_path).is_directory().is_readable()
 assert_that(conf.unidet.detect.config).is_file().is_readable()
