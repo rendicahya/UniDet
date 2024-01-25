@@ -66,7 +66,7 @@ for action in dataset_dir.iterdir():
         if conf.unidet.select.output.video.generate:
             output_frames = []
 
-        if conf.unidet.select.output.repp.enabled:
+        if conf.unidet.select.output.dump.enabled:
             video_dets = {}
 
         json_path = unidet_json_dir / action.name / file.with_suffix(".json").name
@@ -83,7 +83,7 @@ for action in dataset_dir.iterdir():
                 continue
 
             # Robust-and-efficient-post-processing-for-video-object-detection (REPP)
-            if conf.unidet.select.output.repp.enabled:
+            if conf.unidet.select.output.dump.enabled:
                 frame_dets = []
                 ih, iw = frame.shape[:-1]
                 width_diff = max(0, (ih - iw) // 2)
@@ -186,15 +186,15 @@ for action in dataset_dir.iterdir():
                 writer=conf.unidet.select.output.video.writer,
             )
 
-        if conf.unidet.select.output.repp.enabled:
-            output_repp_dir = Path.cwd().parent / conf.unidet.select.output.repp.path
-            output_repp_path = (
-                output_repp_dir / action.name / file.with_suffix(".pckl").name
+        if conf.unidet.select.output.dump.enabled:
+            output_dump_dir = Path.cwd().parent / conf.unidet.select.output.dump.path
+            output_dump_path = (
+                output_dump_dir / action.name / file.with_suffix(".pckl").name
             )
 
-            output_repp_path.parent.mkdir(parents=True, exist_ok=True)
+            output_dump_path.parent.mkdir(parents=True, exist_ok=True)
 
-            with open(output_repp_path, "wb") as f:
+            with open(output_dump_path, "wb") as f:
                 pickle.dump((file.name, video_dets), f)
 
         bar.update(1)
