@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 conf = Config("../config.json")
 dataset_dir = Path.cwd().parent / conf.unidet.select.dataset.path
-unidet_json_dir = Path(conf.unidet.select.json)
+unidet_json_dir = Path.cwd().parent / conf.unidet.select.json
 relevant_object_json = Path.cwd().parent / conf.relevancy.json
 confidence_thres = conf.unidet.select.confidence
 unified_label = "datasets/label_spaces/learned_mAP.json"
