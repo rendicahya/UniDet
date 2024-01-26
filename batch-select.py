@@ -119,11 +119,10 @@ for action in dataset_dir.iterdir():
                 video_dets[f"{i:06}"] = frame_dets
 
             if conf.unidet.select.output.mask.generate:
-                mask_ext = conf.unidet.select.output.mask.ext
                 output_mask_dir = Path(conf.unidet.select.output.mask.path)
                 mask = np.zeros(frame.shape)
                 output_mask_path = (
-                    output_mask_dir / action.name / file.stem / (f"%05d{mask_ext}" % i)
+                    output_mask_dir / action.name / file.stem / f"{i:05}.png"
                 )
 
                 output_mask_path.parent.mkdir(exist_ok=True, parents=True)
