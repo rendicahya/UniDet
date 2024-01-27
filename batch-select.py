@@ -12,9 +12,10 @@ from python_video import frames_to_video, video_frames, video_info
 from tqdm import tqdm
 
 conf = Config("../config.json")
-video_root = Path.cwd().parent / conf.unidet.select.video.path
-unidet_json_root = Path.cwd().parent / conf.unidet.select.json
-relevant_object_json = Path.cwd().parent / conf.relevancy.json
+project_root = Path.cwd().parent
+video_root = project_root / conf.unidet.select.video.path
+unidet_json_root = project_root / conf.unidet.select.json
+relevant_object_json = project_root / conf.relevancy.json
 confidence_thres = conf.unidet.select.confidence
 unified_label = "datasets/label_spaces/learned_mAP.json"
 common_obj = conf.unidet.select.common_objects
@@ -55,9 +56,6 @@ for action in unidet_json_root.iterdir():
         target_obj = [*relevant_ids[action.name], *common_ids]
 
     for file in action.iterdir():
-        if file.suffix != ".json":
-            continue
-
         bar.set_description(file.stem)
 
         video_path = (
