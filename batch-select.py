@@ -191,7 +191,5 @@ for action in unidet_json_root.iterdir():
                 pickle.dump((file.name, video_dets), f)
 
         bar.update(1)
-        break
-    break
 
 bar.close()
