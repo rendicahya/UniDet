@@ -1,9 +1,3 @@
-"""
-This script detects objects in videos and stores the detection results in JSON files and optionally outputs bounding box-annotated videos.
-This script can only be run after obtaining the relevancy lists via relevancy.py.
-This script uses GPU and takes several seconds to process a short video.
-"""
-
 import argparse
 import json
 import multiprocessing as mp
@@ -39,10 +33,10 @@ def setup_cfg(args):
 
 
 conf = Config("../config.json")
-
-dataset_path = Path.cwd().parent / conf.unidet.detect.dataset.path
-output_video_dir = Path.cwd().parent / conf.unidet.detect.output.video.path
-output_json_dir = Path.cwd().parent / conf.unidet.detect.output.json
+project_root = Path.cwd().parent
+dataset_path = project_root / conf.unidet.detect.dataset.path
+output_video_dir = project_root / conf.unidet.detect.output.video.path
+output_json_dir = project_root / conf.unidet.detect.output.json
 
 assert_that(dataset_path).is_directory().is_readable()
 assert_that(conf.unidet.detect.config).is_file().is_readable()
