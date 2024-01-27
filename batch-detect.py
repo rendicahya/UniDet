@@ -34,11 +34,12 @@ def setup_cfg(args):
 
 conf = Config("../config.json")
 project_root = Path.cwd().parent
-dataset_path = project_root / conf.unidet.detect.dataset.path
-output_video_dir = project_root / conf.unidet.detect.output.video.path
-output_json_dir = project_root / conf.unidet.detect.output.json
+video_root = project_root / conf.unidet.detect.video.path
+video_out_dir = project_root / conf.unidet.detect.output.video.path
+json_out_dir = project_root / conf.unidet.detect.output.json
+video_ext = conf.unidet.detect.video.ext
 
-assert_that(dataset_path).is_directory().is_readable()
+assert_that(video_root).is_directory().is_readable()
 assert_that(conf.unidet.detect.config).is_file().is_readable()
 assert_that(conf.unidet.detect.checkpoint).is_file().is_readable()
 
@@ -56,61 +57,56 @@ logger.info("Arguments: " + str(args))
 
 cfg = setup_cfg(args)
 demo = UnifiedVisualizationDemo(cfg, parallel=conf.unidet.detect.parallel)
-n_videos = count_files(dataset_path, ext=conf.unidet.detect.dataset.ext)
+n_videos = count_files(video_root, ext=video_ext)
 bar = tqdm(total=n_videos)
 
-for action in dataset_path.iterdir():
-    for file in action.iterdir():
-        bar.set_description(file.name)
+for file in video_root.glob(f"**/*.{video_ext}"):
+    bar.set_description(file.name)
 
-        input_video = cv2.VideoCapture(str(file))
-        info = video_info(file)
-        n_frames = int(input_video.get(cv2.CAP_PROP_FRAME_COUNT))
-        detection_data = {}
-        output_frames = []
-        gen = demo.run_on_video(input_video)
+    action = file.parent.name
+    video_in = cv2.VideoCapture(str(file))
+    info = video_info(file)
+    n_frames = int(video_in.get(cv2.CAP_PROP_FRAME_COUNT))
+    detection_data = {}
+    out_frames = []
+    gen = demo.run_on_video(video_in)
 
-        for i, (viz, pred) in enumerate(gen):
-            bar.set_description(f"{file.name} ({i}/{n_frames})")
-
-            if conf.unidet.detect.output.video.generate:
-                rgb = cv2.cvtColor(viz, cv2.COLOR_BGR2RGB)
-                output_frames.append(rgb)
-
-            detection_data.update(
-                {
-                    i: [
-                        (pred_box.tolist(), score.tolist(), pred_class.tolist())
-                        for pred_box, score, pred_class in zip(
-                            pred.pred_boxes.tensor,
-                            pred.scores,
-                            pred.pred_classes,
-                        )
-                    ]
-                }
-            )
-
-        input_video.release()
-
-        output_json_path = (
-            output_json_dir / action.name / file.with_suffix(".json").name
-        )
-
-        output_json_path.parent.mkdir(parents=True, exist_ok=True)
-
-        with open(output_json_path, "w") as json_file:
-            json.dump(detection_data, json_file)
+    for i, (viz, pred) in enumerate(gen):
+        bar.set_description(f"{file.name} ({i}/{n_frames})")
 
         if conf.unidet.detect.output.video.generate:
-            output_video_path = (
-                output_video_dir / action.name / file.with_suffix(".mp4").name
-            )
+            rgb = cv2.cvtColor(viz, cv2.COLOR_BGR2RGB)
+            out_frames.append(rgb)
 
-            output_video_path.parent.mkdir(parents=True, exist_ok=True)
-            frames_to_video(
-                output_frames, output_video_path, conf.unidet.detect.output.video.writer
-            )
+        detection_data.update(
+            {
+                i: [
+                    (pred_box.tolist(), score.tolist(), pred_class.tolist())
+                    for pred_box, score, pred_class in zip(
+                        pred.pred_boxes.tensor,
+                        pred.scores,
+                        pred.pred_classes,
+                    )
+                ]
+            }
+        )
 
-        bar.update(1)
+    json_out_path = json_out_dir / action / file.with_suffix(".json").name
+
+    video_in.release()
+    json_out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(json_out_path, "w") as json_file:
+        json.dump(detection_data, json_file)
+
+    if conf.unidet.detect.output.video.generate:
+        video_out_path = video_out_dir / action / file.with_suffix(".mp4").name
+
+        video_out_path.parent.mkdir(parents=True, exist_ok=True)
+        frames_to_video(
+            out_frames, video_out_path, conf.unidet.detect.output.video.writer
+        )
+
+    bar.update(1)
 
 bar.close()
