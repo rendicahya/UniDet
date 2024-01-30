@@ -17,6 +17,11 @@ video_root = project_root / conf.unidet.select.video.path
 unidet_json_root = project_root / conf.unidet.select.json
 relevant_object_json = project_root / conf.relevancy.json
 confidence_thres = conf.unidet.select.confidence
+generate_video = conf.unidet.select.output.video.generate
+generate_mask = conf.unidet.select.output.mask.generate
+bundle_mask = conf.unidet.select.output.mask.bundle
+enable_dump = conf.unidet.select.output.dump.enabled
+out_mask_dir = Path.cwd().parent / conf.unidet.select.output.mask.path
 unified_label = "datasets/label_spaces/learned_mAP.json"
 common_obj = conf.unidet.select.common_objects
 
@@ -66,25 +71,23 @@ for action in unidet_json_root.iterdir():
         vid_info = video_info(video_path)
         iw, ih = vid_info["width"], vid_info["height"]
 
-        if conf.unidet.select.output.video.generate:
+        if generate_video:
             in_frames = video_frames(video_path, reader=conf.unidet.select.video.reader)
             out_frames = []
 
         if conf.unidet.select.output.dump.enabled:
             video_dets = {}
 
-        if (
-            conf.unidet.select.output.mask.generate
-            and conf.unidet.select.output.mask.bundle
-        ):
+        if generate_mask and bundle_mask:
             n_frames = vid_info["n_frames"]
             mask_bundle = np.zeros((n_frames, ih, iw), np.uint8)
+            out_mask_path = out_mask_dir / action.name / file.stem
 
         with open(file, "r") as f:
             json_data = json.load(f)
 
         for i, boxes in json_data.items():
-            if conf.unidet.select.output.dump.enabled:
+            if enable_dump:
                 frame_dets = []
                 width_diff = max(0, (ih - iw) // 2)
                 height_diff = max(0, (iw - ih) // 2)
@@ -119,14 +122,8 @@ for action in unidet_json_root.iterdir():
 
                 video_dets[image_id] = frame_dets
 
-            if conf.unidet.select.output.mask.generate:
-                out_mask_dir = Path.cwd().parent / conf.unidet.select.output.mask.path
-
-                if conf.unidet.select.output.mask.bundle:
-                    out_mask_path = (
-                        out_mask_dir / action.name / file.with_suffix(".mask").name
-                    )
-                else:
+            if generate_mask:
+                if not bundle_mask:
                     mask = np.zeros((ih, iw), np.uint8)
                     out_mask_path = (
                         out_mask_dir / action.name / file.stem / ("%05d.png" % int(i))
@@ -140,17 +137,15 @@ for action in unidet_json_root.iterdir():
 
                     x1, y1, x2, y2 = [round(b) for b in box]
 
-                    if conf.unidet.select.output.mask.bundle:
-                        mask_bundle[i, y1:y2, x1:x2] = 255
+                    if bundle_mask:
+                        mask_bundle[int(i), y1:y2, x1:x2] = 255
                     else:
                         mask[y1:y2, x1:x2] = 255
 
-                if conf.unidet.select.output.mask.bundle:
-                    np.save(out_mask_path, mask_bundle)
-                else:
+                if not bundle_mask:
                     cv2.imwrite(str(out_mask_path), mask)
 
-            if conf.unidet.select.output.video.generate:
+            if generate_video:
                 frame = next(in_frames)
 
                 for box, confidence, class_id in boxes:
@@ -187,7 +182,7 @@ for action in unidet_json_root.iterdir():
 
                 out_frames.append(frame)
 
-        if conf.unidet.select.output.video.generate:
+        if generate_video:
             out_video_dir = Path.cwd().parent / conf.unidet.select.output.video.path
             out_video_path = out_video_dir / action.name / file.with_suffix(".mp4").name
 
@@ -199,7 +194,10 @@ for action in unidet_json_root.iterdir():
                 writer=conf.unidet.select.output.video.writer,
             )
 
-        if conf.unidet.select.output.dump.enabled:
+        if generate_mask and bundle_mask:
+            np.savez_compressed(out_mask_path, mask_bundle)
+
+        if enable_dump:
             out_dump_dir = Path.cwd().parent / conf.unidet.select.output.dump.path
             out_dump_dir = out_dump_dir / action.name / file.with_suffix(".pckl").name
 
