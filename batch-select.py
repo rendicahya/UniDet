@@ -73,6 +73,13 @@ for action in unidet_json_root.iterdir():
         if conf.unidet.select.output.dump.enabled:
             video_dets = {}
 
+        if (
+            conf.unidet.select.output.mask.generate
+            and conf.unidet.select.output.mask.bundle
+        ):
+            n_frames = vid_info["n_frames"]
+            mask_bundle = np.zeros((n_frames, ih, iw), np.uint8)
+
         with open(file, "r") as f:
             json_data = json.load(f)
 
@@ -114,10 +121,16 @@ for action in unidet_json_root.iterdir():
 
             if conf.unidet.select.output.mask.generate:
                 out_mask_dir = Path.cwd().parent / conf.unidet.select.output.mask.path
-                mask = np.zeros((ih, iw), np.uint8)
-                out_mask_path = (
-                    out_mask_dir / action.name / file.stem / ("%05d.png" % int(i))
-                )
+
+                if conf.unidet.select.output.mask.bundle:
+                    out_mask_path = (
+                        out_mask_dir / action.name / file.with_suffix(".mask").name
+                    )
+                else:
+                    mask = np.zeros((ih, iw), np.uint8)
+                    out_mask_path = (
+                        out_mask_dir / action.name / file.stem / ("%05d.png" % int(i))
+                    )
 
                 out_mask_path.parent.mkdir(exist_ok=True, parents=True)
 
@@ -125,10 +138,17 @@ for action in unidet_json_root.iterdir():
                     if confidence < confidence_thres or class_id not in target_obj:
                         continue
 
-                    x1, y1, x2, y2 = [round(i) for i in box]
-                    mask[y1:y2, x1:x2] = 255
+                    x1, y1, x2, y2 = [round(b) for b in box]
 
-                cv2.imwrite(str(out_mask_path), mask)
+                    if conf.unidet.select.output.mask.bundle:
+                        mask_bundle[i, y1:y2, x1:x2] = 255
+                    else:
+                        mask[y1:y2, x1:x2] = 255
+
+                if conf.unidet.select.output.mask.bundle:
+                    np.save(out_mask_path, mask_bundle)
+                else:
+                    cv2.imwrite(str(out_mask_path), mask)
 
             if conf.unidet.select.output.video.generate:
                 frame = next(in_frames)
