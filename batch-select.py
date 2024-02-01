@@ -19,7 +19,6 @@ relevant_object_json = project_root / conf.relevancy.json
 confidence_thres = conf.unidet.select.confidence
 generate_video = conf.unidet.select.output.video.generate
 generate_mask = conf.unidet.select.output.mask.generate
-bundle_mask = conf.unidet.select.output.mask.bundle
 enable_dump = conf.unidet.select.output.dump.enabled
 out_mask_dir = Path.cwd().parent / conf.unidet.select.output.mask.path
 unified_label = "datasets/label_spaces/learned_mAP.json"
@@ -78,10 +77,12 @@ for action in unidet_json_root.iterdir():
         if conf.unidet.select.output.dump.enabled:
             video_dets = {}
 
-        if generate_mask and bundle_mask:
+        if generate_mask:
             n_frames = vid_info["n_frames"]
-            mask_bundle = np.zeros((n_frames, ih, iw), np.uint8)
+            mask_cube = np.zeros((n_frames, ih, iw), np.uint8)
             out_mask_path = out_mask_dir / action.name / file.stem
+
+            out_mask_path.parent.mkdir(exist_ok=True, parents=True)
 
         with open(file, "r") as f:
             json_data = json.load(f)
@@ -123,27 +124,12 @@ for action in unidet_json_root.iterdir():
                 video_dets[image_id] = frame_dets
 
             if generate_mask:
-                if not bundle_mask:
-                    mask = np.zeros((ih, iw), np.uint8)
-                    out_mask_path = (
-                        out_mask_dir / action.name / file.stem / ("%05d.png" % int(i))
-                    )
-
-                out_mask_path.parent.mkdir(exist_ok=True, parents=True)
-
                 for box, confidence, class_id in boxes:
                     if confidence < confidence_thres or class_id not in target_obj:
                         continue
 
                     x1, y1, x2, y2 = [round(b) for b in box]
-
-                    if bundle_mask:
-                        mask_bundle[int(i), y1:y2, x1:x2] = 255
-                    else:
-                        mask[y1:y2, x1:x2] = 255
-
-                if not bundle_mask:
-                    cv2.imwrite(str(out_mask_path), mask)
+                    mask_cube[int(i), y1:y2, x1:x2] = 255
 
             if generate_video:
                 frame = next(in_frames)
@@ -194,8 +180,8 @@ for action in unidet_json_root.iterdir():
                 writer=conf.unidet.select.output.video.writer,
             )
 
-        if generate_mask and bundle_mask:
-            np.savez_compressed(out_mask_path, mask_bundle)
+        if generate_mask:
+            np.savez_compressed(out_mask_path, mask_cube)
 
         if enable_dump:
             out_dump_dir = Path.cwd().parent / conf.unidet.select.output.dump.path
