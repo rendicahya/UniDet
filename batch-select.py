@@ -74,7 +74,7 @@ for action in unidet_json_root.iterdir():
             in_frames = video_frames(video_path, reader=conf.unidet.select.video.reader)
             out_frames = []
 
-        if conf.unidet.select.output.dump.enabled:
+        if enable_dump:
             video_dets = {}
 
         if generate_mask:
@@ -168,6 +168,18 @@ for action in unidet_json_root.iterdir():
 
                 out_frames.append(frame)
 
+        if enable_dump:
+            out_dump_dir = Path.cwd().parent / conf.unidet.select.output.dump.path
+            out_dump_dir = out_dump_dir / action.name / file.with_suffix(".pckl").name
+
+            out_dump_dir.parent.mkdir(parents=True, exist_ok=True)
+
+            with open(out_dump_dir, "wb") as f:
+                pickle.dump((file.name, video_dets), f)
+
+        if generate_mask:
+            np.savez_compressed(out_mask_path, mask_cube)
+
         if generate_video:
             out_video_dir = Path.cwd().parent / conf.unidet.select.output.video.path
             out_video_path = out_video_dir / action.name / file.with_suffix(".mp4").name
@@ -179,18 +191,6 @@ for action in unidet_json_root.iterdir():
                 out_video_path,
                 writer=conf.unidet.select.output.video.writer,
             )
-
-        if generate_mask:
-            np.savez_compressed(out_mask_path, mask_cube)
-
-        if enable_dump:
-            out_dump_dir = Path.cwd().parent / conf.unidet.select.output.dump.path
-            out_dump_dir = out_dump_dir / action.name / file.with_suffix(".pckl").name
-
-            out_dump_dir.parent.mkdir(parents=True, exist_ok=True)
-
-            with open(out_dump_dir, "wb") as f:
-                pickle.dump((file.name, video_dets), f)
 
         bar.update(1)
 
