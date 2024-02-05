@@ -60,7 +60,7 @@ demo = UnifiedVisualizationDemo(cfg, parallel=conf.unidet.detect.parallel)
 n_videos = count_files(video_root, ext=video_ext)
 bar = tqdm(total=n_videos)
 
-for file in video_root.glob(f"**/*.{video_ext}"):
+for file in video_root.glob(f"**/*{video_ext}"):
     bar.set_description(file.name)
 
     action = file.parent.name
