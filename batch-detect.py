@@ -74,7 +74,7 @@ for file in video_in_dir.glob(f"**/*{video_ext}"):
     out_frames = []
 
     for i, (viz, pred) in enumerate(gen):
-        bar.set_description(f"{file.name} ({i}/{n_frames})")
+        bar.set_description(f"{file.name[:50]} ({i}/{n_frames})")
 
         if generate_video:
             rgb = cv2.cvtColor(viz, cv2.COLOR_BGR2RGB)
