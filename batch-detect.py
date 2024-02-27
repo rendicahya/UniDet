@@ -9,7 +9,7 @@ from detectron2.config import get_cfg
 from detectron2.utils.logger import setup_logger
 from python_config import Config
 from python_file import count_files
-from python_video import frames_to_video, video_info, video_writer_like
+from python_video import frames_to_video, video_info
 from tqdm import tqdm
 from unidet.config import add_unidet_config
 from unidet.predictor import UnifiedVisualizationDemo
@@ -33,13 +33,18 @@ def setup_cfg(args):
 
 
 conf = Config("../config.json")
-project_root = Path.cwd().parent
-video_root = project_root / conf.unidet.detect.video.path
-video_out_dir = project_root / conf.unidet.detect.output.video.path
-json_out_dir = project_root / conf.unidet.detect.output.json
-video_ext = conf.unidet.detect.video.ext
+root = Path.cwd().parent
+video_in_dir = root / conf[conf.active.dataset].path
+generate_video = conf.unidet.detect.generate_videos
+video_out_dir = (
+    root / "data" / conf.active.dataset / conf.active.detector / "detect" / "videos"
+)
+json_out_dir = (
+    root / "data" / conf.active.dataset / conf.active.detector / "detect" / "json"
+)
+video_ext = conf[conf.active.dataset].ext
 
-assert_that(video_root).is_directory().is_readable()
+assert_that(video_in_dir).is_directory().is_readable()
 assert_that(conf.unidet.detect.config).is_file().is_readable()
 assert_that(conf.unidet.detect.checkpoint).is_file().is_readable()
 
@@ -57,24 +62,21 @@ logger.info("Arguments: " + str(args))
 
 cfg = setup_cfg(args)
 demo = UnifiedVisualizationDemo(cfg, parallel=conf.unidet.detect.parallel)
-n_videos = count_files(video_root, ext=video_ext)
+n_videos = count_files(video_in_dir, ext=video_ext)
 bar = tqdm(total=n_videos)
 
-for file in video_root.glob(f"**/*{video_ext}"):
-    bar.set_description(file.name)
-
+for file in video_in_dir.glob(f"**/*{video_ext}"):
     action = file.parent.name
     video_in = cv2.VideoCapture(str(file))
-    info = video_info(file)
+    gen = demo.run_on_video(video_in)
     n_frames = int(video_in.get(cv2.CAP_PROP_FRAME_COUNT))
     detection_data = {}
     out_frames = []
-    gen = demo.run_on_video(video_in)
 
     for i, (viz, pred) in enumerate(gen):
         bar.set_description(f"{file.name} ({i}/{n_frames})")
 
-        if conf.unidet.detect.output.video.generate:
+        if generate_video:
             rgb = cv2.cvtColor(viz, cv2.COLOR_BGR2RGB)
             out_frames.append(rgb)
 
@@ -99,13 +101,11 @@ for file in video_root.glob(f"**/*{video_ext}"):
     with open(json_out_path, "w") as json_file:
         json.dump(detection_data, json_file)
 
-    if conf.unidet.detect.output.video.generate:
+    if generate_video:
         video_out_path = video_out_dir / action / file.with_suffix(".mp4").name
 
         video_out_path.parent.mkdir(parents=True, exist_ok=True)
-        frames_to_video(
-            out_frames, video_out_path, conf.unidet.detect.output.video.writer
-        )
+        frames_to_video(out_frames, video_out_path, conf.active.video.writer)
 
     bar.update(1)
 
