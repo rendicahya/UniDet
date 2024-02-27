@@ -36,7 +36,7 @@ video_out_dir = (
     / conf.active.detector
     / "select"
     / conf.active.mode
-    / "videos-COBA"
+    / "videos"
 )
 
 enable_dump = conf.unidet.select.output.dump
@@ -47,7 +47,7 @@ dump_out_dir = (
     / conf.active.detector
     / "select"
     / conf.active.mode
-    / "dump-COBA"
+    / "dump"
 )
 
 generate_mask = conf.unidet.select.output.mask
@@ -58,7 +58,7 @@ out_mask_dir = (
     / conf.active.detector
     / "select"
     / conf.active.mode
-    / "mask-COBA"
+    / "mask"
 )
 unified_label = "datasets/label_spaces/learned_mAP.json"
 common_obj = conf.unidet.select.common_objects
