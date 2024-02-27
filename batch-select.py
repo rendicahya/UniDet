@@ -12,10 +12,10 @@ from python_video import frames_to_video, video_frames, video_info
 from tqdm import tqdm
 
 conf = Config("../config.json")
-project_root = Path.cwd().parent
-video_root = project_root / conf.unidet.select.video.path
-unidet_json_root = project_root / conf.unidet.select.json
-relevant_object_json = project_root / conf.relevancy.json
+root = Path.cwd().parent
+video_in_dir = root / conf[conf.active.dataset].path
+unidet_json_dir = root / conf.active.dataset / conf.active.detector / "detect" / "json"
+relevant_object_json = root / conf.relevancy.json
 confidence_thres = conf.unidet.select.confidence
 generate_video = conf.unidet.select.output.video.generate
 generate_mask = conf.unidet.select.output.mask.generate
@@ -25,13 +25,13 @@ unified_label = "datasets/label_spaces/learned_mAP.json"
 common_obj = conf.unidet.select.common_objects
 
 assert_that(conf.unidet.select.mode).is_in("actorcutmix", "intercutmix")
-assert_that(video_root).is_directory().is_readable()
-assert_that(unidet_json_root).is_directory().is_readable()
+assert_that(video_in_dir).is_directory().is_readable()
+assert_that(unidet_json_dir).is_directory().is_readable()
 assert_that(relevant_object_json).is_file().is_readable()
 assert_that(unified_label).is_file().is_readable()
 assert_that(common_obj).is_type_of(list)
 
-n_files = count_files(video_root, ext=conf.ucf101.ext)
+n_files = count_files(video_in_dir, ext=conf[conf.active.dataset].ext)
 
 with open(unified_label, "r") as f:
     unified_label_file = json.load(f)
@@ -53,7 +53,7 @@ common_ids = [thing_classes.index(i) for i in common_obj]
 bar = tqdm(total=n_files)
 font, font_size, font_weight = cv2.FONT_HERSHEY_PLAIN, 1.2, 1
 
-for action in unidet_json_root.iterdir():
+for action in unidet_json_dir.iterdir():
     if conf.unidet.select.mode == "actorcutmix":
         target_obj = common_ids
     elif conf.unidet.select.mode == "intercutmix":
@@ -63,15 +63,15 @@ for action in unidet_json_root.iterdir():
         bar.set_description(file.stem)
 
         video_path = (
-            video_root
+            video_in_dir
             / action.name
-            / file.with_suffix(conf.unidet.select.video.ext).name
+            / file.with_suffix(conf[conf.active.dataset].ext).name
         )
         vid_info = video_info(video_path)
         iw, ih = vid_info["width"], vid_info["height"]
 
         if generate_video:
-            in_frames = video_frames(video_path, reader=conf.unidet.select.video.reader)
+            in_frames = video_frames(video_path, reader=conf.active.video.reader)
             out_frames = []
 
         if enable_dump:
@@ -189,7 +189,7 @@ for action in unidet_json_root.iterdir():
             frames_to_video(
                 out_frames,
                 out_video_path,
-                writer=conf.unidet.select.output.video.writer,
+                writer=conf.active.video.writer,
             )
 
         bar.update(1)
