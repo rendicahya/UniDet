@@ -14,17 +14,56 @@ from tqdm import tqdm
 conf = Config("../config.json")
 root = Path.cwd().parent
 video_in_dir = root / conf[conf.active.dataset].path
-unidet_json_dir = root / conf.active.dataset / conf.active.detector / "detect" / "json"
-relevant_object_json = root / conf.relevancy.json
+unidet_json_dir = (
+    root / "data" / conf.active.dataset / conf.active.detector / "detect" / "json"
+)
+relevant_object_json = (
+    root
+    / "data/relevancy"
+    / conf.active.detector
+    / conf.active.dataset
+    / "ids"
+    / conf.relevancy.selected.method
+    / f"{conf.relevancy.selected.threshold}.json"
+)
 confidence_thres = conf.unidet.select.confidence
-generate_video = conf.unidet.select.output.video.generate
-generate_mask = conf.unidet.select.output.mask.generate
-enable_dump = conf.unidet.select.output.dump.enabled
-out_mask_dir = Path.cwd().parent / conf.unidet.select.output.mask.path
+
+generate_video = conf.unidet.select.output.video
+video_out_dir = (
+    root
+    / "data"
+    / conf.active.dataset
+    / conf.active.detector
+    / "select"
+    / conf.active.mode
+    / "videos-COBA"
+)
+
+enable_dump = conf.unidet.select.output.dump
+dump_out_dir = (
+    root
+    / "data"
+    / conf.active.dataset
+    / conf.active.detector
+    / "select"
+    / conf.active.mode
+    / "dump-COBA"
+)
+
+generate_mask = conf.unidet.select.output.mask
+out_mask_dir = (
+    root
+    / "data"
+    / conf.active.dataset
+    / conf.active.detector
+    / "select"
+    / conf.active.mode
+    / "mask-COBA"
+)
 unified_label = "datasets/label_spaces/learned_mAP.json"
 common_obj = conf.unidet.select.common_objects
 
-assert_that(conf.unidet.select.mode).is_in("actorcutmix", "intercutmix")
+assert_that(conf.active.mode).is_in("actorcutmix", "intercutmix")
 assert_that(video_in_dir).is_directory().is_readable()
 assert_that(unidet_json_dir).is_directory().is_readable()
 assert_that(relevant_object_json).is_file().is_readable()
@@ -54,13 +93,13 @@ bar = tqdm(total=n_files)
 font, font_size, font_weight = cv2.FONT_HERSHEY_PLAIN, 1.2, 1
 
 for action in unidet_json_dir.iterdir():
-    if conf.unidet.select.mode == "actorcutmix":
+    if conf.active.mode == "actorcutmix":
         target_obj = common_ids
-    elif conf.unidet.select.mode == "intercutmix":
+    elif conf.active.mode == "intercutmix":
         target_obj = [*relevant_ids[action.name], *common_ids]
 
     for file in action.iterdir():
-        bar.set_description(file.stem)
+        bar.set_description(file.stem[:50])
 
         video_path = (
             video_in_dir
@@ -169,11 +208,9 @@ for action in unidet_json_dir.iterdir():
                 out_frames.append(frame)
 
         if enable_dump:
-            out_dump_dir = Path.cwd().parent / conf.unidet.select.output.dump.path
-            out_dump_dir = out_dump_dir / action.name / file.with_suffix(".pckl").name
+            out_dump_dir = dump_out_dir / action.name / file.with_suffix(".pckl").name
 
             out_dump_dir.parent.mkdir(parents=True, exist_ok=True)
-
             with open(out_dump_dir, "wb") as f:
                 pickle.dump((file.name, video_dets), f)
 
@@ -181,11 +218,9 @@ for action in unidet_json_dir.iterdir():
             np.savez_compressed(out_mask_path, mask_cube)
 
         if generate_video:
-            out_video_dir = Path.cwd().parent / conf.unidet.select.output.video.path
-            out_video_path = out_video_dir / action.name / file.with_suffix(".mp4").name
+            out_video_path = video_out_dir / action.name / file.with_suffix(".mp4").name
 
             out_video_path.parent.mkdir(parents=True, exist_ok=True)
-
             frames_to_video(
                 out_frames,
                 out_video_path,
