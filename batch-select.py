@@ -99,7 +99,7 @@ for action in unidet_json_dir.iterdir():
         target_obj = [*relevant_ids[action.name], *common_ids]
 
     for file in action.iterdir():
-        bar.set_description(file.stem[:50])
+        bar.set_description(file.stem[:50].ljust(50))
 
         video_path = (
             video_in_dir
