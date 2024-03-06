@@ -119,9 +119,6 @@ for action in unidet_json_dir.iterdir():
         if generate_mask:
             n_frames = vid_info["n_frames"]
             mask_cube = np.zeros((n_frames, ih, iw), np.uint8)
-            out_mask_path = out_mask_dir / action.name / file.stem
-
-            out_mask_path.parent.mkdir(exist_ok=True, parents=True)
 
         with open(file, "r") as f:
             json_data = json.load(f)
@@ -167,8 +164,9 @@ for action in unidet_json_dir.iterdir():
                     if confidence < confidence_thres or class_id not in target_obj:
                         continue
 
-                    x1, y1, x2, y2 = [round(b) for b in box]
-                    mask_cube[int(i), y1:y2, x1:x2] = 255
+                    if int(i) < n_frames:
+                        x1, y1, x2, y2 = [round(b) for b in box]
+                        mask_cube[int(i), y1:y2, x1:x2] = 255
 
             if generate_video:
                 frame = next(in_frames)
@@ -215,6 +213,9 @@ for action in unidet_json_dir.iterdir():
                 pickle.dump((file.name, video_dets), f)
 
         if generate_mask:
+            out_mask_path = out_mask_dir / action.name / file.stem
+
+            out_mask_path.parent.mkdir(exist_ok=True, parents=True)
             np.savez_compressed(out_mask_path, mask_cube)
 
         if generate_video:
