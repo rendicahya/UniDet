@@ -13,15 +13,16 @@ from tqdm import tqdm
 
 conf = Config("../config.json")
 root = Path.cwd().parent
-video_in_dir = root / conf[conf.active.dataset].path
-unidet_json_dir = (
-    root / "data" / conf.active.dataset / conf.active.detector / "detect" / "json"
-)
+dataset = conf.active.dataset
+mode = conf.active.mode
+detector = conf.active.detector
+video_in_dir = root / conf[dataset].path
+unidet_json_dir = root / "data" / dataset / detector / "detect" / "json"
 relevant_object_json = (
     root
     / "data/relevancy"
-    / conf.active.detector
-    / conf.active.dataset
+    / detector
+    / dataset
     / "ids"
     / conf.relevancy.selected.method
     / f"{conf.relevancy.selected.threshold}.json"
@@ -29,48 +30,30 @@ relevant_object_json = (
 confidence_thres = conf.unidet.select.confidence
 
 generate_video = conf.unidet.select.output.video
-video_out_dir = (
-    root
-    / "data"
-    / conf.active.dataset
-    / conf.active.detector
-    / "select"
-    / conf.active.mode
-    / "videos"
-)
+video_out_dir = root / "data" / dataset / detector / "select" / mode / "videos"
 
 enable_dump = conf.unidet.select.output.dump
-dump_out_dir = (
-    root
-    / "data"
-    / conf.active.dataset
-    / conf.active.detector
-    / "select"
-    / conf.active.mode
-    / "dump"
-)
+dump_out_dir = root / "data" / dataset / detector / "select" / mode / "dump"
 
 generate_mask = conf.unidet.select.output.mask
-out_mask_dir = (
-    root
-    / "data"
-    / conf.active.dataset
-    / conf.active.detector
-    / "select"
-    / conf.active.mode
-    / "mask"
-)
+out_mask_dir = root / "data" / dataset / detector / "select" / mode / "mask"
 unified_label = "datasets/label_spaces/learned_mAP.json"
 common_obj = conf.unidet.select.common_objects
 
-assert_that(conf.active.mode).is_in("actorcutmix", "intercutmix")
+print("Dataset:", dataset)
+print("Mode:", mode)
+print("Generate video:", generate_video)
+print("Generate mask:", generate_mask)
+print("Dump .pckl files:", enable_dump)
+
+assert_that(mode).is_in("actorcutmix", "intercutmix")
 assert_that(video_in_dir).is_directory().is_readable()
 assert_that(unidet_json_dir).is_directory().is_readable()
 assert_that(relevant_object_json).is_file().is_readable()
 assert_that(unified_label).is_file().is_readable()
 assert_that(common_obj).is_type_of(list)
 
-n_files = count_files(video_in_dir, ext=conf[conf.active.dataset].ext)
+n_files = count_files(video_in_dir, ext=conf[dataset].ext)
 
 with open(unified_label, "r") as f:
     unified_label_file = json.load(f)
@@ -93,18 +76,16 @@ bar = tqdm(total=n_files)
 font, font_size, font_weight = cv2.FONT_HERSHEY_PLAIN, 1.2, 1
 
 for action in unidet_json_dir.iterdir():
-    if conf.active.mode == "actorcutmix":
+    if mode == "actorcutmix":
         target_obj = common_ids
-    elif conf.active.mode == "intercutmix":
+    elif mode == "intercutmix":
         target_obj = [*relevant_ids[action.name], *common_ids]
 
     for file in action.iterdir():
         bar.set_description(file.stem[:50].ljust(50))
 
         video_path = (
-            video_in_dir
-            / action.name
-            / file.with_suffix(conf[conf.active.dataset].ext).name
+            video_in_dir / action.name / file.with_suffix(conf[dataset].ext).name
         )
         vid_info = video_info(video_path)
         iw, ih = vid_info["width"], vid_info["height"]
