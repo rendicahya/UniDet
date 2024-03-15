@@ -16,6 +16,8 @@ root = Path.cwd().parent
 dataset = conf.active.dataset
 mode = conf.active.mode
 detector = conf.active.detector
+relevancy_model = conf.relevancy.active.method
+relevancy_threshold = conf.relevancy.active.threshold
 video_in_dir = root / conf[dataset].path
 unidet_json_dir = root / "data" / dataset / detector / "detect" / "json"
 relevant_object_json = (
@@ -24,8 +26,8 @@ relevant_object_json = (
     / detector
     / dataset
     / "ids"
-    / conf.relevancy.selected.method
-    / f"{conf.relevancy.selected.threshold}.json"
+    / relevancy_model
+    / f"{relevancy_threshold}.json"
 )
 confidence_thres = conf.unidet.select.confidence
 
@@ -33,7 +35,17 @@ generate_video = conf.unidet.select.output.video
 video_out_dir = root / "data" / dataset / detector / "select" / mode / "videos"
 
 enable_dump = conf.unidet.select.output.dump
-dump_out_dir = root / "data" / dataset / detector / "select" / mode / "dump"
+dump_out_dir = (
+    root
+    / "data"
+    / dataset
+    / detector
+    / "select"
+    / mode
+    / "dump"
+    / relevancy_model
+    / str(relevancy_threshold)
+)
 
 generate_mask = conf.unidet.select.output.mask
 out_mask_dir = root / "data" / dataset / detector / "select" / mode / "mask"
