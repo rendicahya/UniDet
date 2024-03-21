@@ -48,7 +48,17 @@ dump_out_dir = (
 )
 
 generate_mask = conf.unidet.select.output.mask
-out_mask_dir = root / "data" / dataset / detector / "select" / mode / "mask"
+out_mask_dir = (
+    root
+    / "data"
+    / dataset
+    / detector
+    / "select"
+    / mode
+    / "mask"
+    / relevancy_model
+    / str(relevancy_threshold)
+)
 unified_label = "datasets/label_spaces/learned_mAP.json"
 common_obj = conf.unidet.select.common_objects
 
