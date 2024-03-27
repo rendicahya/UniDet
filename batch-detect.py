@@ -5,9 +5,9 @@ from pathlib import Path
 
 import cv2
 from assertpy.assertpy import assert_that
+from config import settings as conf
 from detectron2.config import get_cfg
 from detectron2.utils.logger import setup_logger
-from python_config import Config
 from python_file import count_files
 from python_video import frames_to_video, video_info
 from tqdm import tqdm
@@ -32,7 +32,6 @@ def setup_cfg(args):
     return cfg
 
 
-conf = Config("../config.json")
 root = Path.cwd().parent
 video_in_dir = root / conf[conf.active.dataset].path
 generate_video = conf.unidet.detect.generate_videos

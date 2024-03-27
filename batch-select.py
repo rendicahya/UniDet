@@ -6,12 +6,11 @@ from pathlib import Path
 import cv2
 import numpy as np
 from assertpy.assertpy import assert_that
-from python_config import Config
+from config import settings as conf
 from python_file import count_files
 from python_video import frames_to_video, video_frames, video_info
 from tqdm import tqdm
 
-conf = Config("../config.json")
 root = Path.cwd().parent
 dataset = conf.active.dataset
 mode = conf.active.mode
