@@ -72,7 +72,6 @@ assert_that(video_in_dir).is_directory().is_readable()
 assert_that(unidet_json_dir).is_directory().is_readable()
 assert_that(relevant_object_json).is_file().is_readable()
 assert_that(unified_label).is_file().is_readable()
-assert_that(common_obj).is_type_of(list)
 
 n_files = count_files(video_in_dir, ext=conf[dataset].ext)
 
@@ -103,8 +102,6 @@ for action in unidet_json_dir.iterdir():
         target_obj = [*relevant_ids[action.name], *common_ids]
 
     for file in action.iterdir():
-        bar.set_description(file.stem[:50].ljust(50))
-
         video_path = (
             video_in_dir / action.name / file.with_suffix(conf[dataset].ext).name
         )
