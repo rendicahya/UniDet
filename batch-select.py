@@ -21,48 +21,48 @@ video_in_dir = root / conf[dataset].path
 unidet_json_dir = root / "data" / dataset / detector / "detect" / "json"
 relevant_object_json = (
     root
-    / "data/relevancy"
-    / detector
-    / dataset
-    / "ids"
-    / relevancy_model
-    / f"{relevancy_threshold}.json"
+    / f"data/relevancy/{detector}/{dataset}/ids/{relevancy_model}/{relevancy_threshold}.json"
 )
+
+bypass_selection = conf.active.bypass_object_selection
 confidence_thres = conf.unidet.select.confidence
-
 generate_video = conf.unidet.select.output.video
-video_out_dir = root / "data" / dataset / detector / "select" / mode / "videos"
-
+video_out_dir = (
+    root
+    / f"data/{dataset}/{detector}"
+    / (
+        f"detect/videos"
+        if bypass_selection
+        else f"select/{mode}/videos/{relevancy_model}/{relevancy_threshold}"
+    )
+)
 enable_dump = conf.unidet.select.output.dump
 dump_out_dir = (
     root
-    / "data"
-    / dataset
-    / detector
-    / "select"
-    / mode
-    / "dump"
-    / relevancy_model
-    / str(relevancy_threshold)
+    / f"data/{dataset}/{detector}"
+    / (
+        f"detect/dump"
+        if bypass_selection
+        else f"select/{mode}/dump/{relevancy_model}/{relevancy_threshold}"
+    )
 )
 
 generate_mask = conf.unidet.select.output.mask
 out_mask_dir = (
     root
-    / "data"
-    / dataset
-    / detector
-    / "select"
-    / mode
-    / "mask"
-    / relevancy_model
-    / str(relevancy_threshold)
+    / f"data/{dataset}/{detector}"
+    / (
+        f"detect/mask"
+        if bypass_selection
+        else f"select/{mode}/mask/{relevancy_model}/{relevancy_threshold}"
+    )
 )
 unified_label = "datasets/label_spaces/learned_mAP.json"
 common_obj = conf.unidet.select.common_objects
 
 print("Dataset:", dataset)
 print("Mode:", mode)
+print("Bypass object selection:", bypass_selection)
 print("Generate video:", generate_video)
 print("Generate mask:", generate_mask)
 print("Dump .pckl files:", enable_dump)
@@ -130,7 +130,9 @@ for action in unidet_json_dir.iterdir():
                 image_id = "%06d" % int(i)
 
                 for box, confidence, class_id in boxes:
-                    if confidence < confidence_thres or class_id not in target_obj:
+                    if not bypass_selection and (
+                        confidence < confidence_thres or class_id not in target_obj
+                    ):
                         continue
 
                     x1, y1, x2, y2 = [round(i) for i in box]
@@ -160,7 +162,9 @@ for action in unidet_json_dir.iterdir():
 
             if generate_mask:
                 for box, confidence, class_id in boxes:
-                    if confidence < confidence_thres or class_id not in target_obj:
+                    if not bypass_selection and (
+                        confidence < confidence_thres or class_id not in target_obj
+                    ):
                         continue
 
                     if int(i) < n_frames:
@@ -171,7 +175,9 @@ for action in unidet_json_dir.iterdir():
                 frame = next(in_frames)
 
                 for box, confidence, class_id in boxes:
-                    if confidence < confidence_thres or class_id not in target_obj:
+                    if not bypass_selection and (
+                        confidence < confidence_thres or class_id not in target_obj
+                    ):
                         continue
 
                     x1, y1, x2, y2 = [round(i) for i in box]
