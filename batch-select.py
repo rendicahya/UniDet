@@ -24,7 +24,7 @@ relevant_object_json = (
     / f"data/relevancy/{detector}/{dataset}/ids/{relevancy_model}/{relevancy_threshold}.json"
 )
 
-bypass_selection = conf.active.bypass_object_selection
+bypass_object_selection = conf.active.bypass_object_selection
 confidence_thres = conf.unidet.select.confidence
 generate_video = conf.unidet.select.output.video
 video_out_dir = (
@@ -32,7 +32,7 @@ video_out_dir = (
     / f"data/{dataset}/{detector}"
     / (
         f"detect/videos"
-        if bypass_selection
+        if bypass_object_selection
         else f"select/{mode}/videos/{relevancy_model}/{relevancy_threshold}"
     )
 )
@@ -42,7 +42,7 @@ dump_out_dir = (
     / f"data/{dataset}/{detector}"
     / (
         f"detect/dump"
-        if bypass_selection
+        if bypass_object_selection
         else f"select/{mode}/dump/{relevancy_model}/{relevancy_threshold}"
     )
 )
@@ -53,7 +53,7 @@ out_mask_dir = (
     / f"data/{dataset}/{detector}"
     / (
         f"detect/mask"
-        if bypass_selection
+        if bypass_object_selection
         else f"select/{mode}/mask/{relevancy_model}/{relevancy_threshold}"
     )
 )
@@ -62,7 +62,7 @@ common_obj = conf.unidet.select.common_objects
 
 print("Dataset:", dataset)
 print("Mode:", mode)
-print("Bypass object selection:", bypass_selection)
+print("Bypass object selection:", bypass_object_selection)
 print("Generate video:", generate_video)
 print("Generate mask:", generate_mask)
 print("Dump .pckl files:", enable_dump)
@@ -130,7 +130,7 @@ for action in unidet_json_dir.iterdir():
                 image_id = "%06d" % int(i)
 
                 for box, confidence, class_id in boxes:
-                    if not bypass_selection and (
+                    if not bypass_object_selection and (
                         confidence < confidence_thres or class_id not in target_obj
                     ):
                         continue
@@ -162,7 +162,7 @@ for action in unidet_json_dir.iterdir():
 
             if generate_mask:
                 for box, confidence, class_id in boxes:
-                    if not bypass_selection and (
+                    if not bypass_object_selection and (
                         confidence < confidence_thres or class_id not in target_obj
                     ):
                         continue
@@ -175,7 +175,7 @@ for action in unidet_json_dir.iterdir():
                 frame = next(in_frames)
 
                 for box, confidence, class_id in boxes:
-                    if not bypass_selection and (
+                    if not bypass_object_selection and (
                         confidence < confidence_thres or class_id not in target_obj
                     ):
                         continue
