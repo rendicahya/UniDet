@@ -36,8 +36,8 @@ root = Path.cwd().parent
 dataset = conf.active.dataset
 video_in_dir = root / conf[dataset].path
 generate_video = conf.unidet.detect.generate_videos
-video_out_dir = root / "data" / dataset / "UniDet/detect/videos"
-json_out_dir = root / "data" / dataset / "UniDet/detect/json"
+video_out_dir = root / f"data/{dataset}/UniDet/detect/videos"
+json_out_dir = root / f"data/{dataset}/UniDet/detect/json"
 video_ext = conf[dataset].ext
 
 assert_that(video_in_dir).is_directory().is_readable()

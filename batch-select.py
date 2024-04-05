@@ -18,7 +18,7 @@ detector = conf.active.detector
 relevancy_model = conf.relevancy.active.method
 relevancy_threshold = conf.relevancy.active.threshold
 video_in_dir = root / conf[dataset].path
-unidet_json_dir = root / "data" / dataset / detector / "detect" / "json"
+unidet_json_dir = root / f"data/{dataset}/{detector}/detect/json"
 relevant_object_json = (
     root
     / f"data/relevancy/{detector}/{dataset}/ids/{relevancy_model}/{relevancy_threshold}.json"
@@ -27,42 +27,32 @@ relevant_object_json = (
 bypass_object_selection = conf.active.bypass_object_selection
 confidence_thres = conf.unidet.select.confidence
 generate_video = conf.unidet.select.output.video
-video_out_dir = (
-    root
-    / f"data/{dataset}/{detector}"
-    / (
-        f"detect/videos"
-        if bypass_object_selection
-        else f"select/{mode}/videos/{relevancy_model}/{relevancy_threshold}"
-    )
-)
 enable_dump = conf.unidet.select.output.dump
-dump_out_dir = (
-    root
-    / f"data/{dataset}/{detector}"
-    / (
-        f"detect/dump"
-        if bypass_object_selection
-        else f"select/{mode}/dump/{relevancy_model}/{relevancy_threshold}"
-    )
-)
-
 generate_mask = conf.unidet.select.output.mask
-out_mask_dir = (
-    root
-    / f"data/{dataset}/{detector}"
-    / (
-        f"detect/mask"
-        if bypass_object_selection
-        else f"select/{mode}/mask/{relevancy_model}/{relevancy_threshold}"
-    )
-)
 unified_label = "datasets/label_spaces/learned_mAP.json"
-common_obj = conf.unidet.select.common_objects
+
+method = "detect" if bypass_object_selection else "select"
+method_dir = root / "data" / dataset / detector / method
+
+if method == "detect":
+    dump_out_dir = method_dir / "dump"
+    mask_out_dir = method_dir / "mask"
+    video_out_dir = method_dir / "videos"
+elif method == "select":
+    dump_out_dir = method_dir / mode / "dump"
+    mask_out_dir = method_dir / mode / "mask"
+    video_out_dir = method_dir / mode / "videos"
+
+    if mode == "intercutmix":
+        dump_out_dir = dump_out_dir / relevancy_model / str(relevancy_threshold)
+        mask_out_dir = mask_out_dir / relevancy_model / str(relevancy_threshold)
+        video_out_dir = video_out_dir / relevancy_model / str(relevancy_threshold)
 
 print("Dataset:", dataset)
 print("Mode:", mode)
 print("Bypass object selection:", bypass_object_selection)
+print("Relevancy model:", relevancy_model)
+print("Relevancy thresh.:", relevancy_threshold)
 print("Generate video:", generate_video)
 print("Generate mask:", generate_mask)
 print("Dump .pckl files:", enable_dump)
@@ -72,8 +62,6 @@ assert_that(video_in_dir).is_directory().is_readable()
 assert_that(unidet_json_dir).is_directory().is_readable()
 assert_that(relevant_object_json).is_file().is_readable()
 assert_that(unified_label).is_file().is_readable()
-
-n_files = count_files(video_in_dir, ext=conf[dataset].ext)
 
 with open(unified_label, "r") as f:
     unified_label_file = json.load(f)
@@ -91,7 +79,9 @@ colors = [
     for _ in range(len(thing_classes))
 ]
 
+common_obj = conf.unidet.select.common_objects
 common_ids = [thing_classes.index(i) for i in common_obj]
+n_files = count_files(video_in_dir, ext=conf[dataset].ext)
 bar = tqdm(total=n_files)
 font, font_size, font_weight = cv2.FONT_HERSHEY_PLAIN, 1.2, 1
 
@@ -180,6 +170,9 @@ for action in unidet_json_dir.iterdir():
                     ):
                         continue
 
+                    if class_id > 700:
+                        print(class_id)
+
                     x1, y1, x2, y2 = [round(i) for i in box]
                     text = f"{thing_classes[class_id]} {confidence:.02}"
                     text_size = cv2.getTextSize(text, font, font_size, font_weight)[0]
@@ -218,7 +211,7 @@ for action in unidet_json_dir.iterdir():
                 pickle.dump((file.name, video_dets), f)
 
         if generate_mask:
-            out_mask_path = out_mask_dir / action.name / file.stem
+            out_mask_path = mask_out_dir / action.name / file.stem
 
             out_mask_path.parent.mkdir(exist_ok=True, parents=True)
             np.savez_compressed(out_mask_path, mask_cube)
