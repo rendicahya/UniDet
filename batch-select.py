@@ -16,12 +16,12 @@ dataset = conf.active.dataset
 mode = conf.active.mode
 detector = conf.active.detector
 relevancy_model = conf.relevancy.active.method
-relevancy_threshold = conf.relevancy.active.threshold
+relevancy_thresh = str(conf.relevancy.active.threshold)
 video_in_dir = root / conf[dataset].path
 unidet_json_dir = root / f"data/{dataset}/{detector}/detect/json"
 relevant_object_json = (
     root
-    / f"data/relevancy/{detector}/{dataset}/ids/{relevancy_model}/{relevancy_threshold}.json"
+    / f"data/relevancy/{detector}/{dataset}/ids/{relevancy_model}/{relevancy_thresh}.json"
 )
 
 bypass_object_selection = conf.active.bypass_object_selection
@@ -44,15 +44,15 @@ elif method == "select":
     video_out_dir = method_dir / mode / "videos"
 
     if mode == "intercutmix":
-        dump_out_dir = dump_out_dir / relevancy_model / str(relevancy_threshold)
-        mask_out_dir = mask_out_dir / relevancy_model / str(relevancy_threshold)
-        video_out_dir = video_out_dir / relevancy_model / str(relevancy_threshold)
+        dump_out_dir = dump_out_dir / relevancy_model / relevancy_thresh
+        mask_out_dir = mask_out_dir / relevancy_model / relevancy_thresh
+        video_out_dir = video_out_dir / relevancy_model / relevancy_thresh
 
 print("Dataset:", dataset)
 print("Mode:", mode)
 print("Bypass object selection:", bypass_object_selection)
 print("Relevancy model:", relevancy_model)
-print("Relevancy thresh.:", relevancy_threshold)
+print("Relevancy thresh.:", relevancy_thresh)
 print("Generate video:", generate_video)
 print("Generate mask:", generate_mask)
 print("Dump .pckl files:", enable_dump)
