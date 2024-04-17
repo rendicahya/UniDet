@@ -24,14 +24,14 @@ relevant_object_json = (
     / f"data/relevancy/{detector}/{dataset}/ids/{relevancy_model}/{relevancy_thresh}.json"
 )
 
-bypass_object_selection = conf.active.bypass_object_selection
+object_selection = conf.active.object_selection
 confidence_thres = conf.unidet.select.confidence
 generate_video = conf.unidet.select.output.video
 enable_dump = conf.unidet.select.output.dump
 generate_mask = conf.unidet.select.output.mask
 unified_label = "datasets/label_spaces/learned_mAP.json"
 
-method = "detect" if bypass_object_selection else "select"
+method = "select" if object_selection else "detect"
 method_dir = root / "data" / dataset / detector / method
 
 if method == "detect":
@@ -50,7 +50,7 @@ elif method == "select":
 
 print("Dataset:", dataset)
 print("Mode:", mode)
-print("Bypass object selection:", bypass_object_selection)
+print("Object selection:", object_selection)
 print("Relevancy model:", relevancy_model)
 print("Relevancy thresh.:", relevancy_thresh)
 print("Generate video:", generate_video)
@@ -120,7 +120,7 @@ for action in unidet_json_dir.iterdir():
                 image_id = "%06d" % int(i)
 
                 for box, confidence, class_id in boxes:
-                    if not bypass_object_selection and (
+                    if object_selection and (
                         confidence < confidence_thres or class_id not in target_obj
                     ):
                         continue
@@ -152,7 +152,7 @@ for action in unidet_json_dir.iterdir():
 
             if generate_mask:
                 for box, confidence, class_id in boxes:
-                    if not bypass_object_selection and (
+                    if object_selection and (
                         confidence < confidence_thres or class_id not in target_obj
                     ):
                         continue
@@ -165,7 +165,7 @@ for action in unidet_json_dir.iterdir():
                 frame = next(in_frames)
 
                 for box, confidence, class_id in boxes:
-                    if not bypass_object_selection and (
+                    if object_selection and (
                         confidence < confidence_thres or class_id not in target_obj
                     ):
                         continue
