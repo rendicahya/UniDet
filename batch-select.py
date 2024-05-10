@@ -1,8 +1,13 @@
+import sys
+
+sys.path.append(".")
+
 import json
 import pickle
 import random
 from pathlib import Path
 
+import click
 import cv2
 import numpy as np
 from assertpy.assertpy import assert_that
@@ -11,7 +16,7 @@ from python_file import count_files
 from python_video import frames_to_video, video_frames, video_info
 from tqdm import tqdm
 
-root = Path.cwd().parent
+root = Path.cwd()
 dataset = conf.active.dataset
 mode = conf.active.mode
 detector = conf.active.detector
@@ -29,7 +34,7 @@ confidence_thres = conf.unidet.select.confidence
 generate_video = conf.unidet.select.output.video
 enable_dump = conf.unidet.select.output.dump
 generate_mask = conf.unidet.select.output.mask
-unified_label = "datasets/label_spaces/learned_mAP.json"
+unified_label = "UniDet/datasets/label_spaces/learned_mAP.json"
 
 method = "select" if object_selection else "detect"
 method_dir = root / "data" / dataset / detector / method
@@ -48,20 +53,22 @@ elif method == "select":
         mask_out_dir = mask_out_dir / relevancy_model / relevancy_thresh
         video_out_dir = video_out_dir / relevancy_model / relevancy_thresh
 
-print("Dataset:", dataset)
-print("Mode:", mode)
-print("Object selection:", object_selection)
-print("Relevancy model:", relevancy_model)
-print("Relevancy thresh.:", relevancy_thresh)
 print("Generate video:", generate_video)
 print("Generate mask:", generate_mask)
-print("Dump .pckl files:", enable_dump)
+print("Dump .pckl files (for REPP):", enable_dump)
+print("Input:", unidet_json_dir)
+print("Dump output:", dump_out_dir)
+print("Mask output:", mask_out_dir)
+print("Video output:", video_out_dir)
 
 assert_that(mode).is_in("actorcutmix", "intercutmix")
 assert_that(video_in_dir).is_directory().is_readable()
 assert_that(unidet_json_dir).is_directory().is_readable()
 assert_that(relevant_object_json).is_file().is_readable()
 assert_that(unified_label).is_file().is_readable()
+
+if not click.confirm("\nDo you want to continue?", show_default=True):
+    exit("Aborted.")
 
 with open(unified_label, "r") as f:
     unified_label_file = json.load(f)

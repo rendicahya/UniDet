@@ -1,8 +1,15 @@
+import sys
+
+sys.path.append(".")
+
 import argparse
-import json
 import multiprocessing as mp
+
+# import json
+import pickle
 from pathlib import Path
 
+import click
 import cv2
 from assertpy.assertpy import assert_that
 from config import settings as conf
@@ -27,6 +34,7 @@ def setup_cfg(args):
     cfg.MODEL.PANOPTIC_FPN.COMBINE.INSTANCES_CONFIDENCE_THRESH = (
         args.confidence_threshold
     )
+
     cfg.freeze()
 
     return cfg
@@ -34,10 +42,12 @@ def setup_cfg(args):
 
 root = Path.cwd().parent
 dataset = conf.active.dataset
+detector = conf.active.detector
 video_in_dir = root / conf[dataset].path
 generate_video = conf.unidet.detect.generate_videos
-video_out_dir = root / f"data/{dataset}/UniDet/detect/videos"
-json_out_dir = root / f"data/{dataset}/UniDet/detect/json"
+video_out_dir = root / f"data/{dataset}/{detector}/detect/videos"
+# json_out_dir = root / f"data/{dataset}/{detector}/detect/json"
+out_dir = root / f"data/{dataset}/{detector}/detect/detection"
 video_ext = conf[dataset].ext
 
 assert_that(video_in_dir).is_directory().is_readable()
@@ -56,8 +66,13 @@ setup_logger(name="fvcore")
 logger = setup_logger()
 logger.info("Arguments: " + str(args))
 
-print("Dataset:", dataset)
+print("Input:", video_in_dir)
+print("Output:", out_dir)
 print("Generate video:", generate_video)
+print("Output video:", video_out_dir)
+
+if not click.confirm("\nDo you want to continue?", show_default=True):
+    exit("Aborted.")
 
 cfg = setup_cfg(args)
 demo = UnifiedVisualizationDemo(cfg, parallel=conf.unidet.detect.parallel)
@@ -68,8 +83,8 @@ for file in video_in_dir.glob(f"**/*{video_ext}"):
     action = file.parent.name
     video_in = cv2.VideoCapture(str(file))
     gen = demo.run_on_video(video_in)
-    n_frames = int(video_in.get(cv2.CAP_PROP_FRAME_COUNT))
-    detection_data = {}
+    # n_frames = int(video_in.get(cv2.CAP_PROP_FRAME_COUNT))
+    detection_data = []
     out_frames = []
 
     for i, (viz, pred) in enumerate(gen):
@@ -90,13 +105,18 @@ for file in video_in_dir.glob(f"**/*{video_ext}"):
             }
         )
 
-    json_out_path = json_out_dir / action / file.with_suffix(".json").name
+    # json_out_path = json_out_dir / action / file.with_suffix(".json").name
+    out_path = out_dir / action / file.with_suffix(".pkl").name
 
     video_in.release()
-    json_out_path.parent.mkdir(parents=True, exist_ok=True)
+    # json_out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(json_out_path, "w") as json_file:
-        json.dump(detection_data, json_file)
+    # with open(json_out_path, "w") as json_file:
+    #     json.dump(detection_data, json_file)
+
+    with open(out_path, "w") as file:
+        pickle.dump(detection_data, file)
 
     if generate_video:
         video_out_path = video_out_dir / action / file.with_suffix(".mp4").name
