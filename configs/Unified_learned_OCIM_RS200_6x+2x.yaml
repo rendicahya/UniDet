@@ -38,7 +38,7 @@ MULTI_DATASET:
   NUM_CLASSES: [365, 80, 500, 37]
   DATA_RATIO: [1, 1, 1, 1]
   USE_CAS: [True, False, True, False]
-  UNIFIED_LABEL_FILE: 'datasets/label_spaces/learned_mAP+M.json'
+  UNIFIED_LABEL_FILE: 'UniDet/datasets/label_spaces/learned_mAP+M.json'
 SOLVER:
   IMS_PER_BATCH: 16
   STEPS: (480000, 500000)
