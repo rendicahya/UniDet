@@ -82,6 +82,12 @@ bar = tqdm(total=n_videos)
 
 for file in video_in_dir.glob(f"**/*{video_ext}"):
     action = file.parent.name
+    json_out_path = json_out_dir / action / file.with_suffix(".json").name
+
+    if json_out_path.exists() and json_out_path.stat().st_size:
+        bar.update(1)
+        continue
+
     video_in = cv2.VideoCapture(str(file))
     n_frames = int(video_in.get(cv2.CAP_PROP_FRAME_COUNT))
     gen = demo.run_on_video(video_in)
@@ -107,8 +113,6 @@ for file in video_in_dir.glob(f"**/*{video_ext}"):
                 ]
             }
         )
-
-    json_out_path = json_out_dir / action / file.with_suffix(".json").name
 
     video_in.release()
     json_out_path.parent.mkdir(parents=True, exist_ok=True)
