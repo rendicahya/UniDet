@@ -20,8 +20,8 @@ root = Path.cwd()
 dataset = conf.active.dataset
 mode = conf.active.mode
 detector = conf.active.detector
-relevancy_model = conf.relevancy.active.method
-relevancy_thresh = str(conf.relevancy.active.threshold)
+relevancy_model = conf.active.relevancy.method
+relevancy_thresh = str(conf.active.relevancy.threshold)
 video_in_dir = root / conf[dataset].path
 unidet_json_dir = root / f"data/{dataset}/{detector}/detect/json"
 relevant_object_json = (
@@ -57,9 +57,9 @@ print("Generate video:", generate_video)
 print("Generate mask:", generate_mask)
 print("Dump .pckl files (for REPP):", enable_dump)
 print("Input:", unidet_json_dir)
-print("Dump output:", dump_out_dir)
-print("Mask output:", mask_out_dir)
-print("Video output:", video_out_dir)
+print("Dump output:", dump_out_dir.relative_to(root))
+print("Mask output:", mask_out_dir.relative_to(root))
+print("Video output:", video_out_dir.relative_to(root))
 
 assert_that(mode).is_in("actorcutmix", "intercutmix")
 assert_that(video_in_dir).is_directory().is_readable()
