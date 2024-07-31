@@ -53,13 +53,10 @@ elif method == "select":
         mask_out_dir = mask_out_dir / relevancy_model / relevancy_thresh
         video_out_dir = video_out_dir / relevancy_model / relevancy_thresh
 
-print("Generate video:", generate_video)
-print("Generate mask:", generate_mask)
-print("Dump .pckl files (for REPP):", enable_dump)
 print("Input:", unidet_json_dir)
-print("Dump output:", dump_out_dir.relative_to(root))
-print("Mask output:", mask_out_dir.relative_to(root))
-print("Video output:", video_out_dir.relative_to(root))
+print(f"Dump output: {dump_out_dir.relative_to(root)} ({enable_dump})")
+print(f"Mask output: {mask_out_dir.relative_to(root)} ({generate_mask})")
+print(f"Video output: {video_out_dir.relative_to(root)} ({generate_video})")
 
 assert_that(mode).is_in("actorcutmix", "intercutmix")
 assert_that(video_in_dir).is_directory().is_readable()
