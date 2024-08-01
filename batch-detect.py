@@ -65,12 +65,10 @@ args.opts = ["MODEL.WEIGHTS", str(unidet_checkpoint)]
 
 setup_logger(name="fvcore")
 logger = setup_logger()
-logger.info("Arguments: " + str(args))
 
-print("Input:", video_in_dir)
-print("Output:", json_out_dir)
-print("Generate video:", generate_video)
-print("Output video:", video_out_dir)
+print("Input:", video_in_dir.relative_to(root))
+print("Output:", json_out_dir.relative_to(root))
+print(f"Output video: {video_out_dir.relative_to(root)} ({generate_video})")
 
 if not click.confirm("\nDo you want to continue?", show_default=True):
     exit("Aborted.")
