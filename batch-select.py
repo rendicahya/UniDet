@@ -53,7 +53,7 @@ elif method == "select":
         mask_out_dir = mask_out_dir / relevancy_model / relevancy_thresh
         video_out_dir = video_out_dir / relevancy_model / relevancy_thresh
 
-print("Input:", unidet_json_dir)
+print("Input:", unidet_json_dir.relative_to(root))
 print(f"Dump output: {dump_out_dir.relative_to(root)} ({enable_dump})")
 print(f"Mask output: {mask_out_dir.relative_to(root)} ({generate_mask})")
 print(f"Video output: {video_out_dir.relative_to(root)} ({generate_video})")
@@ -174,8 +174,8 @@ for action in unidet_json_dir.iterdir():
                     ):
                         continue
 
-                    if class_id > 700:
-                        print(class_id)
+                    if class_id > len(thing_classes) - 1:
+                        continue
 
                     x1, y1, x2, y2 = [round(i) for i in box]
                     text = f"{thing_classes[class_id]} {confidence:.02}"
