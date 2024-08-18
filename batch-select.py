@@ -18,12 +18,13 @@ from tqdm import tqdm
 
 root = Path.cwd()
 dataset = conf.active.dataset
-mode = conf.active.mode
+method = conf.active.mode
 detector = conf.active.detector
 relevancy_model = conf.active.relevancy.method
 relevancy_thresh = str(conf.active.relevancy.threshold)
+object_conf = str(conf.unidet.detect.confidence)
 video_in_dir = root / conf[dataset].path
-unidet_json_dir = root / f"data/{dataset}/{detector}/detect/json"
+unidet_json_dir = root / f"data/{dataset}/{detector}/detect/{object_conf}/json"
 relevant_object_json = (
     root
     / f"data/relevancy/{detector}/{dataset}/ids/{relevancy_model}/{relevancy_thresh}.json"
@@ -36,19 +37,19 @@ enable_dump = conf.unidet.select.output.dump
 generate_mask = conf.unidet.select.output.mask
 unified_label = "UniDet/datasets/label_spaces/learned_mAP.json"
 
-method = "select" if object_selection else "detect"
-method_dir = root / "data" / dataset / detector / method
+mode = "select" if object_selection else "detect"
+mode_dir = root / "data" / dataset / detector / mode
 
-if method == "detect":
-    dump_out_dir = method_dir / "dump"
-    mask_out_dir = method_dir / "mask"
-    video_out_dir = method_dir / "videos"
-elif method == "select":
-    dump_out_dir = method_dir / mode / "dump"
-    mask_out_dir = method_dir / mode / "mask"
-    video_out_dir = method_dir / mode / "videos"
+if mode == "detect":
+    dump_out_dir = mode_dir / "dump"
+    mask_out_dir = mode_dir / "mask"
+    video_out_dir = mode_dir / "videos"
+elif mode == "select":
+    dump_out_dir = mode_dir / method / object_conf / "dump"
+    mask_out_dir = mode_dir / method / object_conf / "mask"
+    video_out_dir = mode_dir / method / object_conf / "videos"
 
-    if mode == "intercutmix":
+    if method == "intercutmix":
         dump_out_dir = dump_out_dir / relevancy_model / relevancy_thresh
         mask_out_dir = mask_out_dir / relevancy_model / relevancy_thresh
         video_out_dir = video_out_dir / relevancy_model / relevancy_thresh
@@ -58,7 +59,7 @@ print(f"Dump output: {dump_out_dir.relative_to(root)} ({enable_dump})")
 print(f"Mask output: {mask_out_dir.relative_to(root)} ({generate_mask})")
 print(f"Video output: {video_out_dir.relative_to(root)} ({generate_video})")
 
-assert_that(mode).is_in("actorcutmix", "intercutmix")
+assert_that(method).is_in("actorcutmix", "intercutmix")
 assert_that(video_in_dir).is_directory().is_readable()
 assert_that(unidet_json_dir).is_directory().is_readable()
 assert_that(relevant_object_json).is_file().is_readable()
@@ -90,9 +91,9 @@ bar = tqdm(total=n_files)
 font, font_size, font_weight = cv2.FONT_HERSHEY_PLAIN, 1.2, 1
 
 for action in unidet_json_dir.iterdir():
-    if mode == "actorcutmix":
+    if method == "actorcutmix":
         target_obj = common_ids
-    elif mode == "intercutmix":
+    elif method == "intercutmix":
         target_obj = [*relevant_ids[action.name], *common_ids]
 
     for file in action.iterdir():
