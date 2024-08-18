@@ -43,8 +43,9 @@ dataset = conf.active.dataset
 detector = conf.active.detector
 video_in_dir = root / conf[dataset].path
 generate_video = conf.unidet.detect.generate_videos
-video_out_dir = root / f"data/{dataset}/{detector}/detect/videos"
-json_out_dir = root / f"data/{dataset}/{detector}/detect/json"
+confidence = conf.unidet.detect.confidence
+video_out_dir = root / f"data/{dataset}/{detector}/detect/{confidence}/videos"
+json_out_dir = root / f"data/{dataset}/{detector}/detect/{confidence}/json"
 video_ext = conf[dataset].ext
 
 unidet_dir = root / "UniDet"
@@ -59,7 +60,7 @@ mp.set_start_method("spawn", force=True)
 
 args = argparse.ArgumentParser()
 args.config_file = unidet_config
-args.confidence_threshold = conf.unidet.detect.confidence
+args.confidence_threshold = confidence
 args.parallel = conf.unidet.detect.parallel
 args.opts = ["MODEL.WEIGHTS", str(unidet_checkpoint)]
 
@@ -67,7 +68,7 @@ setup_logger(name="fvcore")
 logger = setup_logger()
 
 print("Input:", video_in_dir.relative_to(root))
-print("Output:", json_out_dir.relative_to(root))
+print("Output JSON:", json_out_dir.relative_to(root))
 print(f"Output video: {video_out_dir.relative_to(root)} ({generate_video})")
 
 if not click.confirm("\nDo you want to continue?", show_default=True):
