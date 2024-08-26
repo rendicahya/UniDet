@@ -69,7 +69,9 @@ logger = setup_logger()
 
 print("Input:", video_in_dir.relative_to(root))
 print("Output JSON:", json_out_dir.relative_to(root))
-print(f"Output video: {video_out_dir.relative_to(root)} ({generate_video})")
+
+if generate_video:
+    print("Output video:", video_out_dir.relative_to(root))
 
 if not click.confirm("\nDo you want to continue?", show_default=True):
     exit("Aborted.")

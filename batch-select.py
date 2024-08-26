@@ -24,7 +24,7 @@ relevancy_model = conf.active.relevancy.method
 relevancy_thresh = str(conf.active.relevancy.threshold)
 object_conf = str(conf.unidet.detect.confidence)
 video_in_dir = root / conf[dataset].path
-unidet_json_dir = root / f"data/{dataset}/{detector}/detect/{object_conf}/json"
+unidet_json_dir = root / f"data/{dataset}/{detector}/{object_conf}/detect/json"
 relevant_object_json = (
     root
     / f"data/relevancy/{detector}/{dataset}/ids/{relevancy_model}/{relevancy_thresh}.json"
@@ -38,16 +38,16 @@ generate_mask = conf.unidet.select.output.mask
 unified_label = "UniDet/datasets/label_spaces/learned_mAP.json"
 
 mode = "select" if object_selection else "detect"
-mode_dir = root / "data" / dataset / detector / mode
+mode_dir = root / "data" / dataset / detector / object_conf / mode
 
 if mode == "detect":
     dump_out_dir = mode_dir / "dump"
     mask_out_dir = mode_dir / "mask"
     video_out_dir = mode_dir / "videos"
 elif mode == "select":
-    dump_out_dir = mode_dir / method / object_conf / "dump"
-    mask_out_dir = mode_dir / method / object_conf / "mask"
-    video_out_dir = mode_dir / method / object_conf / "videos"
+    dump_out_dir = mode_dir / method / "dump"
+    mask_out_dir = mode_dir / method / "mask"
+    video_out_dir = mode_dir / method / "videos"
 
     if method == "intercutmix":
         dump_out_dir = dump_out_dir / relevancy_model / relevancy_thresh
