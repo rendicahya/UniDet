@@ -9,15 +9,16 @@ from pathlib import Path
 
 import click
 import cv2
-from assertpy.assertpy import assert_that
-from config import settings as conf
 from detectron2.config import get_cfg
 from detectron2.utils.logger import setup_logger
-from python_file import count_files
-from python_video import frames_to_video
 from tqdm import tqdm
 from unidet.config import add_unidet_config
 from unidet.predictor import UnifiedVisualizationDemo
+
+from assertpy.assertpy import assert_that
+from config import settings as conf
+from python_file import count_files
+from python_video import frames_to_video
 
 
 def setup_cfg(args):

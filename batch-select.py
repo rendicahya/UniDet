@@ -10,11 +10,12 @@ from pathlib import Path
 import click
 import cv2
 import numpy as np
+from tqdm import tqdm
+
 from assertpy.assertpy import assert_that
 from config import settings as conf
 from python_file import count_files
 from python_video import frames_to_video, video_frames, video_info
-from tqdm import tqdm
 
 root = Path.cwd()
 dataset = conf.active.dataset
