@@ -130,7 +130,7 @@ for action in unidet_json_dir.iterdir():
                     ):
                         continue
 
-                    x1, y1, x2, y2 = [round(i) for i in box]
+                    x1, y1, x2, y2 = box
                     y_min, x_min, y_max, x_max = y1, x1, y2, x2
                     y_min, x_min = max(0, y_min), max(0, x_min)
                     y_max, x_max = min(ih, y_max), min(iw, x_max)
