@@ -17,7 +17,6 @@ from unidet.predictor import UnifiedVisualizationDemo
 
 from assertpy.assertpy import assert_that
 from config import settings as conf
-from python_file import count_files
 from python_video import frames_to_video
 
 
@@ -79,7 +78,7 @@ if not click.confirm("\nDo you want to continue?", show_default=True):
 
 cfg = setup_cfg(args)
 demo = UnifiedVisualizationDemo(cfg, parallel=conf.unidet.detect.parallel)
-n_videos = count_files(video_in_dir, ext=video_ext)
+n_videos = conf[dataset].n_videos
 bar = tqdm(total=n_videos)
 
 for file in video_in_dir.glob(f"**/*{video_ext}"):
@@ -106,7 +105,11 @@ for file in video_in_dir.glob(f"**/*{video_ext}"):
         detection_data.update(
             {
                 i: [
-                    (pred_box.tolist(), score.tolist(), pred_class.tolist())
+                    (
+                        [round(i) for i in pred_box.tolist()],
+                        round(score.tolist(), 3),
+                        pred_class.tolist(),
+                    )
                     for pred_box, score, pred_class in zip(
                         pred.pred_boxes.tensor,
                         pred.scores,
@@ -129,5 +132,6 @@ for file in video_in_dir.glob(f"**/*{video_ext}"):
         frames_to_video(out_frames, video_out_path, conf.active.video.writer)
 
     bar.update(1)
+    break
 
 bar.close()
