@@ -14,7 +14,6 @@ from tqdm import tqdm
 
 from assertpy.assertpy import assert_that
 from config import settings as conf
-from python_file import count_files
 from python_video import frames_to_video, video_frames, video_info
 
 root = Path.cwd()
@@ -87,7 +86,7 @@ colors = [
 
 common_obj = conf.unidet.select.common_objects
 common_ids = [thing_classes.index(i) for i in common_obj]
-n_files = count_files(video_in_dir, ext=conf[dataset].ext)
+n_files = conf[dataset].n_videos
 bar = tqdm(total=n_files)
 font, font_size, font_weight = cv2.FONT_HERSHEY_PLAIN, 1.2, 1
 
