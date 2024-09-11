@@ -79,7 +79,7 @@ if not click.confirm("\nDo you want to continue?", show_default=True):
 cfg = setup_cfg(args)
 demo = UnifiedVisualizationDemo(cfg, parallel=conf.unidet.detect.parallel)
 n_videos = conf[dataset].n_videos
-bar = tqdm(total=n_videos)
+bar = tqdm(total=n_videos, dynamic_ncols=True)
 
 for file in video_in_dir.glob(f"**/*{video_ext}"):
     action = file.parent.name

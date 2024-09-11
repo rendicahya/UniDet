@@ -87,7 +87,7 @@ colors = [
 common_obj = conf.unidet.select.common_objects
 common_ids = [thing_classes.index(i) for i in common_obj]
 n_files = conf[dataset].n_videos
-bar = tqdm(total=n_files)
+bar = tqdm(total=n_files, dynamic_ncols=True)
 font, font_size, font_weight = cv2.FONT_HERSHEY_PLAIN, 1.2, 1
 
 for action in unidet_json_dir.iterdir():
