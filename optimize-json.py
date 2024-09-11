@@ -21,7 +21,7 @@ print("Output:", json_out_dir.relative_to(root))
 if not click.confirm("\nDo you want to continue?", show_default=True):
     exit("Aborted.")
 
-bar = tqdm(total=conf[dataset].n_videos)
+bar = tqdm(total=conf[dataset].n_videos, dynamic_ncols=True)
 
 for file in json_in_dir.glob("**/*.json"):
     json_out_path = json_out_dir / file.parent.name / file.name
