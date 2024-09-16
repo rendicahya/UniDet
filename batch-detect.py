@@ -132,6 +132,5 @@ for file in video_in_dir.glob(f"**/*{video_ext}"):
         frames_to_video(out_frames, video_out_path, conf.active.video.writer)
 
     bar.update(1)
-    break
 
 bar.close()
