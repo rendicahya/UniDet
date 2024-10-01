@@ -19,12 +19,13 @@ from python_video import frames_to_video, video_frames, video_info
 root = Path.cwd()
 dataset = conf.active.dataset
 method = conf.active.mode
+use_REPP = conf.active.use_REPP
 detector = conf.active.detector
 relevancy_model = conf.active.relevancy.method
 relevancy_thresh = str(conf.active.relevancy.threshold)
 object_conf = str(conf.unidet.detect.confidence)
 video_in_dir = root / conf[dataset].path
-unidet_json_dir = root / f"data/{dataset}/{detector}/{object_conf}/detect/json"
+unidet_json_dir = root / "data" / dataset / detector / "detect" / object_conf / "json"
 relevant_object_json = (
     root
     / f"data/relevancy/{detector}/{dataset}/ids/{relevancy_model}/{relevancy_thresh}.json"
@@ -36,30 +37,38 @@ generate_video = conf.unidet.select.output.video
 enable_dump = conf.unidet.select.output.dump
 generate_mask = conf.unidet.select.output.mask
 unified_label = "UniDet/datasets/label_spaces/learned_mAP.json"
+mid_dir = root / "data" / dataset / detector / object_conf / method
 
-mode = "select" if object_selection else "detect"
-mode_dir = root / "data" / dataset / detector / object_conf / mode
-
-if mode == "detect":
-    dump_out_dir = mode_dir / "dump"
-    mask_out_dir = mode_dir / "mask"
-    video_out_dir = mode_dir / "videos"
-elif mode == "select":
-    dump_out_dir = mode_dir / method / "dump"
-    mask_out_dir = mode_dir / method / "mask"
-    video_out_dir = mode_dir / method / "videos"
-
-    if method == "intercutmix":
-        dump_out_dir = dump_out_dir / relevancy_model / relevancy_thresh
-        mask_out_dir = mask_out_dir / relevancy_model / relevancy_thresh
-        video_out_dir = video_out_dir / relevancy_model / relevancy_thresh
+if method in ("allcutmix", "actorcutmix"):
+    dump_out_dir = mid_dir / "dump"
+    mask_out_dir = mid_dir / "mask"
+    video_out_dir = mid_dir / "videos"
+else:
+    dump_out_dir = (
+        mid_dir
+        / ("REPP/dump" if use_REPP else "dump")
+        / relevancy_model
+        / relevancy_thresh
+    )
+    mask_out_dir = (
+        mid_dir
+        / ("REPP/mask" if use_REPP else "mask")
+        / relevancy_model
+        / relevancy_thresh
+    )
+    video_out_dir = (
+        mid_dir
+        / ("REPP/videos" if use_REPP else "videos")
+        / relevancy_model
+        / relevancy_thresh
+    )
 
 print("Input:", unidet_json_dir.relative_to(root))
 print(f"Dump output: {dump_out_dir.relative_to(root)} ({enable_dump})")
 print(f"Mask output: {mask_out_dir.relative_to(root)} ({generate_mask})")
 print(f"Video output: {video_out_dir.relative_to(root)} ({generate_video})")
 
-assert_that(method).is_in("actorcutmix", "intercutmix")
+assert_that(method).is_in("actorcutmix", "allcutmix", "intercutmix")
 assert_that(video_in_dir).is_directory().is_readable()
 assert_that(unidet_json_dir).is_directory().is_readable()
 assert_that(relevant_object_json).is_file().is_readable()
