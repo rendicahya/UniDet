@@ -9,12 +9,13 @@ from pathlib import Path
 
 import click
 import cv2
+import mmcv
 import numpy as np
 from tqdm import tqdm
 
 from assertpy.assertpy import assert_that
 from config import settings as conf
-from python_video import frames_to_video, video_frames, video_info
+from python_video import frames_to_video, video_frames
 
 root = Path.cwd()
 dataset = conf.active.dataset
@@ -31,7 +32,6 @@ relevant_object_json = (
     / f"data/relevancy/{detector}/{dataset}/ids/{relevancy_model}/{relevancy_thresh}.json"
 )
 
-object_selection = conf.active.object_selection
 confidence_thres = conf.unidet.select.confidence
 generate_video = conf.unidet.select.output.video
 enable_dump = conf.unidet.select.output.dump
@@ -44,24 +44,9 @@ if method in ("allcutmix", "actorcutmix"):
     mask_out_dir = mid_dir / "mask"
     video_out_dir = mid_dir / "videos"
 else:
-    dump_out_dir = (
-        mid_dir
-        / ("REPP/dump" if use_REPP else "dump")
-        / relevancy_model
-        / relevancy_thresh
-    )
-    mask_out_dir = (
-        mid_dir
-        / ("REPP/mask" if use_REPP else "mask")
-        / relevancy_model
-        / relevancy_thresh
-    )
-    video_out_dir = (
-        mid_dir
-        / ("REPP/videos" if use_REPP else "videos")
-        / relevancy_model
-        / relevancy_thresh
-    )
+    dump_out_dir = mid_dir / "dump" / relevancy_model / relevancy_thresh
+    mask_out_dir = mid_dir / "mask" / relevancy_model / relevancy_thresh
+    video_out_dir = mid_dir / "videos" / relevancy_model / relevancy_thresh
 
 print("Input:", unidet_json_dir.relative_to(root))
 print(f"Dump output: {dump_out_dir.relative_to(root)} ({enable_dump})")
@@ -109,8 +94,8 @@ for action in unidet_json_dir.iterdir():
         video_path = (
             video_in_dir / action.name / file.with_suffix(conf[dataset].ext).name
         )
-        vid_info = video_info(video_path)
-        iw, ih = vid_info["width"], vid_info["height"]
+        vid_info = mmcv.VideoReader(str(video_path))
+        iw, ih = vid_info.resolution
 
         if generate_video:
             in_frames = video_frames(video_path, reader=conf.active.video.reader)
@@ -120,7 +105,7 @@ for action in unidet_json_dir.iterdir():
             video_dets = {}
 
         if generate_mask:
-            n_frames = vid_info["n_frames"]
+            n_frames = vid_info.frame_cnt
             mask_cube = np.zeros((n_frames, ih, iw), np.uint8)
 
         with open(file, "r") as f:
@@ -134,7 +119,7 @@ for action in unidet_json_dir.iterdir():
                 image_id = "%06d" % int(i)
 
                 for box, confidence, class_id in boxes:
-                    if object_selection and (
+                    if method in ("actorcutmix", "intercutmix") and (
                         confidence < confidence_thres or class_id not in target_obj
                     ):
                         continue
@@ -166,7 +151,7 @@ for action in unidet_json_dir.iterdir():
 
             if generate_mask:
                 for box, confidence, class_id in boxes:
-                    if object_selection and (
+                    if method in ("actorcutmix", "intercutmix") and (
                         confidence < confidence_thres or class_id not in target_obj
                     ):
                         continue
@@ -179,7 +164,7 @@ for action in unidet_json_dir.iterdir():
                 frame = next(in_frames)
 
                 for box, confidence, class_id in boxes:
-                    if object_selection and (
+                    if method in ("actorcutmix", "intercutmix") and (
                         confidence < confidence_thres or class_id not in target_obj
                     ):
                         continue
