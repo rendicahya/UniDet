@@ -24,9 +24,9 @@ use_REPP = conf.active.use_REPP
 detector = conf.active.detector
 relevancy_model = conf.active.relevancy.method
 relevancy_thresh = str(conf.active.relevancy.threshold)
-object_conf = str(conf.unidet.detect.confidence)
+det_confidence = str(conf.unidet.detect.confidence)
 video_in_dir = root / conf[dataset].path
-unidet_json_dir = root / "data" / dataset / detector / "detect" / object_conf / "json"
+unidet_json_dir = root / "data" / dataset / detector / "detect" / det_confidence / "json"
 relevant_object_json = (
     root
     / f"data/relevancy/{detector}/{dataset}/ids/{relevancy_model}/{relevancy_thresh}.json"
@@ -37,7 +37,7 @@ generate_video = conf.unidet.select.output.video
 enable_dump = conf.unidet.select.output.dump
 generate_mask = conf.unidet.select.output.mask
 unified_label = "UniDet/datasets/label_spaces/learned_mAP.json"
-mid_dir = root / "data" / dataset / detector / object_conf / method
+mid_dir = root / "data" / dataset / detector / confidence_thres / method
 
 if method in ("allcutmix", "actorcutmix"):
     dump_out_dir = mid_dir / "dump"
