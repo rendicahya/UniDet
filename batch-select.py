@@ -37,7 +37,7 @@ generate_video = conf.unidet.select.output.video
 enable_dump = conf.unidet.select.output.dump
 generate_mask = conf.unidet.select.output.mask
 unified_label = "UniDet/datasets/label_spaces/learned_mAP.json"
-mid_dir = root / "data" / dataset / detector / confidence_thres / method
+mid_dir = root / "data" / dataset / detector / str(confidence_thres) / method
 
 if method in ("allcutmix", "actorcutmix"):
     dump_out_dir = mid_dir / "dump"
