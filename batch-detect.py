@@ -38,21 +38,21 @@ def setup_cfg(args):
     return cfg
 
 
-root = Path.cwd()
-dataset = conf.active.dataset
-detector = conf.active.detector
-video_in_dir = root / conf[dataset].path
-generate_video = conf.unidet.detect.generate_videos
-confidence = conf.unidet.detect.confidence
-video_out_dir = root / f"data/{dataset}/{detector}/detect/{confidence}/videos"
-json_out_dir = root / f"data/{dataset}/{detector}/detect/{confidence}/json"
-video_ext = conf[dataset].ext
+ROOT = Path.cwd()
+DATASET = conf.active.dataset
+DETECTOR = conf.active.detector
+VIDEO_IN_DIR = ROOT / conf[DATASET].path
+GENERATE_VIDEOS = conf.unidet.detect.generate_videos
+DET_CONF = conf.unidet.detect.confidence
+VIDEO_OUT_DIR = ROOT / f"data/{DATASET}/{DETECTOR}/detect/{DET_CONF}/videos"
+JSON_OUT_DIR = ROOT / f"data/{DATASET}/{DETECTOR}/detect/{DET_CONF}/json"
+VIDEO_EXT = conf[DATASET].ext
 
-unidet_dir = root / "UniDet"
+unidet_dir = ROOT / "UniDet"
 unidet_config = unidet_dir / conf.unidet.detect.config
 unidet_checkpoint = unidet_dir / conf.unidet.detect.checkpoint
 
-assert_that(video_in_dir).is_directory().is_readable()
+assert_that(VIDEO_IN_DIR).is_directory().is_readable()
 assert_that(unidet_config).is_file().is_readable()
 assert_that(unidet_checkpoint).is_file().is_readable()
 
@@ -60,30 +60,30 @@ mp.set_start_method("spawn", force=True)
 
 args = argparse.ArgumentParser()
 args.config_file = unidet_config
-args.confidence_threshold = confidence
+args.confidence_threshold = DET_CONF
 args.parallel = conf.unidet.detect.parallel
 args.opts = ["MODEL.WEIGHTS", str(unidet_checkpoint)]
 
 setup_logger(name="fvcore")
 logger = setup_logger()
 
-print("Input:", video_in_dir.relative_to(root))
-print("Output JSON:", json_out_dir.relative_to(root))
+print("Input:", VIDEO_IN_DIR.relative_to(ROOT))
+print("Output JSON:", JSON_OUT_DIR.relative_to(ROOT))
 
-if generate_video:
-    print("Output video:", video_out_dir.relative_to(root))
+if GENERATE_VIDEOS:
+    print("Output video:", VIDEO_OUT_DIR.relative_to(ROOT))
 
 if not click.confirm("\nDo you want to continue?", show_default=True):
     exit("Aborted.")
 
 cfg = setup_cfg(args)
 demo = UnifiedVisualizationDemo(cfg, parallel=conf.unidet.detect.parallel)
-n_videos = conf[dataset].n_videos
+n_videos = conf[DATASET].n_videos
 bar = tqdm(total=n_videos, dynamic_ncols=True)
 
-for file in video_in_dir.glob(f"**/*{video_ext}"):
+for file in VIDEO_IN_DIR.glob(f"**/*{VIDEO_EXT}"):
     action = file.parent.name
-    json_out_path = json_out_dir / action / file.with_suffix(".json").name
+    json_out_path = JSON_OUT_DIR / action / file.with_suffix(".json").name
 
     if json_out_path.exists() and json_out_path.stat().st_size:
         bar.update(1)
@@ -98,7 +98,7 @@ for file in video_in_dir.glob(f"**/*{video_ext}"):
     for i, (viz, pred) in enumerate(gen):
         bar.set_description(f"({i}/{n_frames})")
 
-        if generate_video:
+        if GENERATE_VIDEOS:
             rgb = cv2.cvtColor(viz, cv2.COLOR_BGR2RGB)
             out_frames.append(rgb)
 
@@ -125,8 +125,8 @@ for file in video_in_dir.glob(f"**/*{video_ext}"):
     with open(json_out_path, "w") as json_file:
         json.dump(detection_data, json_file)
 
-    if generate_video:
-        video_out_path = video_out_dir / action / file.with_suffix(".mp4").name
+    if GENERATE_VIDEOS:
+        video_out_path = VIDEO_OUT_DIR / action / file.with_suffix(".mp4").name
 
         video_out_path.parent.mkdir(parents=True, exist_ok=True)
         frames_to_video(out_frames, video_out_path, conf.active.video.writer)
