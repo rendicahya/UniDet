@@ -17,46 +17,45 @@ from assertpy.assertpy import assert_that
 from config import settings as conf
 from python_video import frames_to_video, video_frames
 
-root = Path.cwd()
-dataset = conf.active.dataset
-method = conf.active.mode
-use_REPP = conf.active.use_REPP
-detector = conf.active.detector
-relevancy_model = conf.active.relevancy.method
-relevancy_thresh = str(conf.active.relevancy.threshold)
-det_confidence = str(conf.unidet.detect.confidence)
-video_in_dir = root / conf[dataset].path
-unidet_json_dir = root / "data" / dataset / detector / "detect" / det_confidence / "json"
-relevant_object_json = (
-    root
-    / f"data/relevancy/{detector}/{dataset}/ids/{relevancy_model}/{relevancy_thresh}.json"
+ROOT = Path.cwd()
+DATASET = conf.active.dataset
+METHOD = conf.active.mode
+USE_REPP = conf.active.use_REPP
+DETECTOR = conf.active.detector
+RELEV_MODEL = conf.active.relevancy.method
+RELEV_THRESH = str(conf.active.relevancy.threshold)
+DET_CONF = str(conf.unidet.detect.confidence)
+VIDEO_IN_DIR = ROOT / conf[DATASET].path
+UNIDET_JSON_DIR = ROOT / "data" / DATASET / DETECTOR / "detect" / DET_CONF / "json"
+RELEV_OBJECT_JSON = (
+    ROOT / f"data/relevancy/{DETECTOR}/{DATASET}/ids/{RELEV_MODEL}/{RELEV_THRESH}.json"
 )
 
-confidence_thres = conf.unidet.select.confidence
-generate_video = conf.unidet.select.output.video
-enable_dump = conf.unidet.select.output.dump
-generate_mask = conf.unidet.select.output.mask
+CONFIDENCE_THRESH = conf.unidet.select.confidence
+GENERATE_VIDEO = conf.unidet.select.output.video
+ENABLE_DUMP = conf.unidet.select.output.dump
+GENERATE_MASK = conf.unidet.select.output.mask
 unified_label = "UniDet/datasets/label_spaces/learned_mAP.json"
-mid_dir = root / "data" / dataset / detector / str(confidence_thres) / method
+mid_dir = ROOT / "data" / DATASET / DETECTOR / str(CONFIDENCE_THRESH) / METHOD
 
-if method in ("allcutmix", "actorcutmix"):
+if METHOD in ("allcutmix", "actorcutmix"):
     dump_out_dir = mid_dir / "dump"
     mask_out_dir = mid_dir / "mask"
     video_out_dir = mid_dir / "videos"
 else:
-    dump_out_dir = mid_dir / "dump" / relevancy_model / relevancy_thresh
-    mask_out_dir = mid_dir / "mask" / relevancy_model / relevancy_thresh
-    video_out_dir = mid_dir / "videos" / relevancy_model / relevancy_thresh
+    dump_out_dir = mid_dir / "dump" / RELEV_MODEL / RELEV_THRESH
+    mask_out_dir = mid_dir / "mask" / RELEV_MODEL / RELEV_THRESH
+    video_out_dir = mid_dir / "videos" / RELEV_MODEL / RELEV_THRESH
 
-print("Input:", unidet_json_dir.relative_to(root))
-print(f"Dump output: {dump_out_dir.relative_to(root)} ({enable_dump})")
-print(f"Mask output: {mask_out_dir.relative_to(root)} ({generate_mask})")
-print(f"Video output: {video_out_dir.relative_to(root)} ({generate_video})")
+print("Input:", UNIDET_JSON_DIR.relative_to(ROOT))
+print(f"Dump output: {dump_out_dir.relative_to(ROOT)} ({ENABLE_DUMP})")
+print(f"Mask output: {mask_out_dir.relative_to(ROOT)} ({GENERATE_MASK})")
+print(f"Video output: {video_out_dir.relative_to(ROOT)} ({GENERATE_VIDEO})")
 
-assert_that(method).is_in("actorcutmix", "allcutmix", "intercutmix")
-assert_that(video_in_dir).is_directory().is_readable()
-assert_that(unidet_json_dir).is_directory().is_readable()
-assert_that(relevant_object_json).is_file().is_readable()
+assert_that(METHOD).is_in("actorcutmix", "allcutmix", "intercutmix")
+assert_that(VIDEO_IN_DIR).is_directory().is_readable()
+assert_that(UNIDET_JSON_DIR).is_directory().is_readable()
+assert_that(RELEV_OBJECT_JSON).is_file().is_readable()
 assert_that(unified_label).is_file().is_readable()
 
 if not click.confirm("\nDo you want to continue?", show_default=True):
@@ -70,7 +69,7 @@ thing_classes = [
     for x in unified_label_file["categories"]
 ]
 
-with open(relevant_object_json, "r") as f:
+with open(RELEV_OBJECT_JSON, "r") as f:
     relevant_ids = json.load(f)
 
 colors = [
@@ -80,31 +79,31 @@ colors = [
 
 common_obj = conf.unidet.select.common_objects
 common_ids = [thing_classes.index(i) for i in common_obj]
-n_files = conf[dataset].n_videos
+n_files = conf[DATASET].n_videos
 bar = tqdm(total=n_files, dynamic_ncols=True)
 font, font_size, font_weight = cv2.FONT_HERSHEY_PLAIN, 1.2, 1
 
-for action in unidet_json_dir.iterdir():
-    if method == "actorcutmix":
+for action in UNIDET_JSON_DIR.iterdir():
+    if METHOD == "actorcutmix":
         target_obj = common_ids
-    elif method == "intercutmix":
-        target_obj = [*relevant_ids[action.name], *common_ids]
+    elif METHOD == "intercutmix":
+        target_obj = [*relevant_ids[action.name.replace('_', ' ')], *common_ids]
 
     for file in action.iterdir():
         video_path = (
-            video_in_dir / action.name / file.with_suffix(conf[dataset].ext).name
+            VIDEO_IN_DIR / action.name / file.with_suffix(conf[DATASET].ext).name
         )
         vid_info = mmcv.VideoReader(str(video_path))
         iw, ih = vid_info.resolution
 
-        if generate_video:
+        if GENERATE_VIDEO:
             in_frames = video_frames(video_path, reader=conf.active.video.reader)
             out_frames = []
 
-        if enable_dump:
+        if ENABLE_DUMP:
             video_dets = {}
 
-        if generate_mask:
+        if GENERATE_MASK:
             n_frames = vid_info.frame_cnt
             mask_cube = np.zeros((n_frames, ih, iw), np.uint8)
 
@@ -112,15 +111,15 @@ for action in unidet_json_dir.iterdir():
             json_data = json.load(f)
 
         for i, boxes in json_data.items():
-            if enable_dump:
+            if ENABLE_DUMP:
                 frame_dets = []
                 width_diff = max(0, (ih - iw) // 2)
                 height_diff = max(0, (iw - ih) // 2)
                 image_id = "%06d" % int(i)
 
                 for box, confidence, class_id in boxes:
-                    if method in ("actorcutmix", "intercutmix") and (
-                        confidence < confidence_thres or class_id not in target_obj
+                    if METHOD in ("actorcutmix", "intercutmix") and (
+                        confidence < CONFIDENCE_THRESH or class_id not in target_obj
                     ):
                         continue
 
@@ -149,10 +148,10 @@ for action in unidet_json_dir.iterdir():
 
                 video_dets[image_id] = frame_dets
 
-            if generate_mask:
+            if GENERATE_MASK:
                 for box, confidence, class_id in boxes:
-                    if method in ("actorcutmix", "intercutmix") and (
-                        confidence < confidence_thres or class_id not in target_obj
+                    if METHOD in ("actorcutmix", "intercutmix") and (
+                        confidence < CONFIDENCE_THRESH or class_id not in target_obj
                     ):
                         continue
 
@@ -160,12 +159,12 @@ for action in unidet_json_dir.iterdir():
                         x1, y1, x2, y2 = [round(b) for b in box]
                         mask_cube[int(i), y1:y2, x1:x2] = 255
 
-            if generate_video:
+            if GENERATE_VIDEO:
                 frame = next(in_frames)
 
                 for box, confidence, class_id in boxes:
-                    if method in ("actorcutmix", "intercutmix") and (
-                        confidence < confidence_thres or class_id not in target_obj
+                    if METHOD in ("actorcutmix", "intercutmix") and (
+                        confidence < CONFIDENCE_THRESH or class_id not in target_obj
                     ):
                         continue
 
@@ -202,20 +201,20 @@ for action in unidet_json_dir.iterdir():
 
                 out_frames.append(frame)
 
-        if enable_dump:
+        if ENABLE_DUMP:
             out_dump_dir = dump_out_dir / action.name / file.with_suffix(".pckl").name
 
             out_dump_dir.parent.mkdir(parents=True, exist_ok=True)
             with open(out_dump_dir, "wb") as f:
                 pickle.dump((file.name, video_dets), f)
 
-        if generate_mask:
+        if GENERATE_MASK:
             out_mask_path = mask_out_dir / action.name / file.stem
 
             out_mask_path.parent.mkdir(exist_ok=True, parents=True)
             np.savez_compressed(out_mask_path, mask_cube)
 
-        if generate_video:
+        if GENERATE_VIDEO:
             out_video_path = video_out_dir / action.name / file.with_suffix(".mp4").name
 
             out_video_path.parent.mkdir(parents=True, exist_ok=True)
